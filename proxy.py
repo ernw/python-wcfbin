@@ -84,18 +84,28 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
         if scm not in ('http', 'ftp') or fragment or not netloc:
             self.send_error(400, "bad url %s" % self.path)
             return
+        target_scm = ''
+        target_netloc = ''
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             if scm == 'http':
+                if os.getenv('http_proxy'):
+                    target_scm = scm
+                    target_netloc = netloc
+                    scm, netloc, _, _, _, _ = urlparse.urlparse(os.getenv('http_proxy'), 'http')
+                else:
+                    del self.headers['Proxy-Connection']
+
                 if self._connect_to(netloc, soc):
                     self.log_request()
                     soc.send("%s %s %s\r\n" % (self.command,
-                                               urlparse.urlunparse(('', '', path,
+                                               urlparse.urlunparse((target_scm,
+                                                                    target_netloc, path,
                                                                     params, query,
                                                                     '')),
                                                self.request_version))
                     self.headers['Connection'] = 'close'
-                    del self.headers['Proxy-Connection']
+                    del self.headers['Accept-Encoding']
                     #for key_val in self.headers.items():
                     #    soc.send("%s: %s\r\n" % key_val)
                     #soc.send("\r\n")
@@ -130,7 +140,7 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
             count = int(headers['Content-Length'])
             data = self.rfile.read(count)
 
-        if len(data) != count:
+        if data and len(data) != count:
             self.log_error('%d missing bytes', count - len(data))
 
         for h in self.handler:
@@ -139,10 +149,65 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
             except:
                 pass
         
+        if data:
+            headers['Content-Length'] = str(len(data))
+        elif 'Content-Length' in headers:
+            headers['Content-Length'] = '0'
+
         for key_val in list(self.headers.items()):
             soc.send(("%s: %s\r\n" % key_val).encode())
         soc.send("\r\n")
-        soc.send(data)
+        if data:
+            soc.send(data)
+
+        def _read_line(soc):
+            line = ''
+            read = True
+            while read:
+                c = soc.recv(1)
+                if c == '\r':
+                    c = soc.recv(1)
+                    if c == '\n':
+                        return line
+                    else:
+                        line += '\r'
+                line += c
+
+        head_line = _read_line(soc)
+        line = _read_line(soc)
+        headers = dict()
+        while line != '':
+            n,v = line.split(': ')
+            headers[n.strip()] = v.strip()
+            line = _read_line(soc)
+
+        data = ''
+        if 'Content-Length' in headers:
+            count = int(headers['Content-Length'])
+            data = soc.recv(count)
+        else:
+            tmp = soc.recv(1024)
+            while tmp:
+                data += tmp
+                tmp = soc.recv(1024)
+
+        for h in self.handler:
+            try:
+                headers, data = h(headers, data)
+            except:
+                pass
+
+        if data:
+            headers['Content-Length'] = str(len(data))
+        elif 'Content-Length' in headers:
+            headers['Content-Length'] = '0'
+
+        self.wfile.write(head_line)
+        for key_val in list(self.headers.items()):
+            self.wfile.write("%s: %s\r\n" % key_val)
+        self.wfile.write("\r\n")
+        if data:
+            self.wfile.write(data)
  
     def _read_write(self, soc, max_idling=20, local=False):
         iw = [self.connection, soc]
@@ -350,7 +415,6 @@ def encode_decode(headers, data):
         fp.close()
         headers['X-WCF-Encode'] = '1'
         headers['Content-type'] = 'text/soap+xml'
-    headers['Content-Length'] = str(len(data))
     return headers, data
 
 ProxyHandler.handler.append(encode_decode)
