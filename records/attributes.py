@@ -32,7 +32,7 @@ class ShortAttributeRecord(Attribute):
 
     @classmethod
     def parse(cls, fp):
-        name = Utf8String.parse(fp)
+        name = Utf8String.parse(fp).value
         type = struct.unpack('<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
 
@@ -196,6 +196,7 @@ class ShortXmlnsAttributeRecord(Attribute):
     def to_bytes(self):
         bytes = struct.pack('<B', self.type)
         bytes += Utf8String(self.value).to_bytes()
+        return bytes
 
     def __str__(self):
         return 'xmlns="%s"' % (self.value,)
@@ -218,6 +219,7 @@ class XmlnsAttributeRecord(Attribute):
         bytes = struct.pack('<B', self.type)
         bytes += Utf8String(self.name).to_bytes()
         bytes += Utf8String(self.value).to_bytes()
+        return bytes
 
     def __str__(self):
         return 'xmlns:%s="%s"' % (self.name, self.value)
@@ -232,6 +234,10 @@ class PrefixAttributeRecord(AttributeRecord):
     def __init__(self, name, value):
         super(PrefixAttributeRecord, self).__init__(self.char, name, value)
 
+    def to_bytes(self):
+        string = Utf8String(self.name)
+        return struct.pack('<B', self.type) + string.to_bytes() + self.value.to_bytes()
+
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
@@ -242,6 +248,10 @@ class PrefixAttributeRecord(AttributeRecord):
 class PrefixDictionaryAttributeRecord(DictionaryAttributeRecord):
     def __init__(self, index, value):
         super(PrefixDictionaryAttributeRecord, self).__init__(self.char, index, value)
+
+    def to_bytes(self):
+        idx = MultiByteInt31(self.index)
+        return struct.pack('<B', self.type) + idx.to_bytes() + self.value.to_bytes()
 
     @classmethod
     def parse(cls, fp):

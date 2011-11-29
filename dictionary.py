@@ -486,3 +486,5 @@ dictionary = {
 0x3CA : 'faultactor',
 0x3CC : 'detail',
 }
+
+inverted_dict = dict([(v, k) for (k, v) in dictionary.iteritems()])

@@ -50,7 +50,7 @@ class MultiByteInt31(object):
             return struct.pack('<BB',
                     value_a | 0x80,
                     value_b)
-        elif value_a != 0:
+        else:
             return struct.pack('<B',
                     value_a)
 
@@ -87,7 +87,7 @@ class Utf8String(object):
         return MultiByteInt31(strlen).to_bytes() + self.value
 
     def __str__(self):
-        return str(self.value)
+        return self.value
 
     @classmethod
     def parse(cls, fp):

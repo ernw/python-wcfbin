@@ -6,12 +6,13 @@ logging.basicConfig(level=logging.INFO)
 
 from datatypes import *
 from records.base import *
-from dictionary import dictionary
+from dictionary import *
 
 class ShortElementRecord(Element):
     type = 0x40
 
     def __init__(self, name, *args, **kwargs):
+        self.childs = []
         self.name = name
         self.attributes = []
 
@@ -68,6 +69,7 @@ class ShortDictionaryElementRecord(Element):
     type = 0x42
 
     def __init__(self, index, *args, **kwargs):
+        self.childs = []
         self.index = index
         self.attributes = []
         self.name = dictionary[self.index]
@@ -99,6 +101,7 @@ class DictionaryElementRecord(Element):
     type = 0x43
 
     def __init__(self, prefix, index, *args, **kwargs):
+        self.childs = []
         self.prefix = prefix
         self.index = index
         self.attributes = []
@@ -137,6 +140,16 @@ class PrefixElementRecord(ElementRecord):
     def __init__(self, name):
         super(PrefixElementRecord, self).__init__(self.char, name)
 
+    def to_bytes(self):
+        string = Utf8String(self.name)
+
+        bytes= (struct.pack('<B', self.type) + 
+                string.to_bytes())
+
+        for attr in self.attributes:
+            bytes += attr.to_bytes()
+        return bytes
+
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
@@ -145,6 +158,16 @@ class PrefixElementRecord(ElementRecord):
 class PrefixDictionaryElementRecord(DictionaryElementRecord):
     def __init__(self, index):
         super(PrefixDictionaryElementRecord, self).__init__(self.char, index)
+
+    def to_bytes(self):
+        string = MultiByteInt31(self.index)
+
+        bytes= (struct.pack('<B', self.type) +
+                string.to_bytes())
+
+        for attr in self.attributes:
+            bytes += attr.to_bytes()
+        return bytes
 
     @classmethod
     def parse(cls, fp):
