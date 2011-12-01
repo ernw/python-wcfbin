@@ -2,6 +2,18 @@ import struct
 import base64
 import datetime
 import logging
+from htmlentitydefs import codepoint2name
+
+def escapecp(cp):
+    return '&%s;' % codepoint2name[cp] if (cp in codepoint2name) else chr(cp)
+
+def escape(text):
+    newtext = ''
+    for c in text:
+        newtext += escapecp(ord(c))
+    return newtext
+
+
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -365,7 +377,7 @@ class Char8TextRecord(Text):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return escape(self.value)
     
     def to_bytes(self):
         bytes  = struct.pack('<B', self.type)

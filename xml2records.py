@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
-from HTMLParser import HTMLParser
+from MyHTMLParser import HTMLParser
+from htmlentitydefs import name2codepoint
 import re
 import base64
 import logging
@@ -14,6 +15,9 @@ classes = Record.records.values()
 classes = dict([(c.__name__, c) for c in classes])
 #inverted_dict = dict([(n,v) for n,v in inverted_dict.iteritems()])
 
+
+def unescape(s):
+    return chr(name2codepoint[s]) if (s in name2codepoint) else "&" + s + ";"
 
 int_reg = re.compile(r'^-?\d+$')
 uint_reg = re.compile(r'^\d+$')
@@ -75,6 +79,13 @@ class Parser(HTMLParser):
         
     def _parse_data(self, data):
         data = data.strip()
+        b64 = False
+        try:
+            if base64_reg.match(data):
+                base64.b64decode(data)
+                b64 = True
+        except:
+            b64 = False
         if data == '0':
             return ZeroTextRecord()
         elif data == '1':
@@ -100,7 +111,7 @@ class Parser(HTMLParser):
                 return Int64TextRecord(val)
         elif data == '':
             return EmptyTextRecord()
-        elif base64_reg.match(data):
+        elif b64:
             data = base64.b64decode(data)
             val = len(data)
             if val < 2**8:
@@ -223,6 +234,14 @@ class Parser(HTMLParser):
             self.data = data
         else:
             self.data += data
+
+    def handle_charref(self, name):
+        self.handle_data(chr(int(name, 16)))
+
+    def handle_entityref(self, name):
+        self.handle_data(unescape(name))
+
+    handle_decl = handle_data
 
     def handle_comment(self,comment):
         if data:

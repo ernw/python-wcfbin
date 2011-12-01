@@ -127,8 +127,8 @@ class DictionaryAttributeRecord(Attribute):
     
     @classmethod
     def parse(cls, fp):
+        prefix = Utf8String.parse(fp).value
         index = MultiByteInt31.parse(fp).value
-        name = Utf8String.parse(fp).value
         type = struct.unpack('<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
 
