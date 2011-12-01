@@ -186,7 +186,12 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
         if 'Content-Length' in headers:
             count = int(headers['Content-Length'])
             if count > 0:
-                data = soc.recv(count)
+                data = ''
+                while len(data) < count:
+                    data = soc.recv(count - len(data))
+                
+                if len(data) != count:
+                    print 'ERROR!!!!!!!!!!!!!!!!!!!!! %d missing bytes' % (count - len(data))
         else:
             tmp = soc.recv(1024)
             while tmp:
@@ -403,7 +408,7 @@ def encode_decode(headers, data):
         print '##################################'
         p.feed(data)
         data = dump_records(p.records)
-        print data
+        print data.encode('hex')
         del headers['X-WCF-Encode']
         headers['Content-Type'] = 'application/soap+msbin1'
     else:
