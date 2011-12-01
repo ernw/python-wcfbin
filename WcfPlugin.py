@@ -14,10 +14,13 @@ def encode_decode(headers, data):
         p.feed(data)
         data = dump_records(p.records)
         del headers['X-WCF-Encode']
-        headers['Content-type'] = 'application/soap+msbin1'
+        headers['Content-Type'] = 'application/soap+msbin1'
+        headers['Content-Length'] = str(len(data))
     else:
-        if not headers['Content-type'] == 'application/soap+msbin1':
+        #print headers['Content-type']
+        if 'Content-Type' not in headers or headers['Content-Type'] != 'application/soap+msbin1':
             return headers, data
+        #print headers
         fp = StringIO(data)
         data = Record.parse(fp)
         fp.close()
@@ -26,7 +29,8 @@ def encode_decode(headers, data):
         data = fp.getvalue()
         fp.close()
         headers['X-WCF-Encode'] = '1'
-        headers['Content-type'] = 'text/soap+xml'
+        headers['Content-Type'] = 'text/soap+xml'
+        headers['Content-Length'] = str(len(data))
     return headers, data
 
 class WcfPlugin(ICallback):
@@ -49,7 +53,6 @@ class WcfPlugin(ICallback):
         for i in range(1, len(lines)):
             n,v = lines[i].split(': ')
             headers[n.strip()] = v.strip()
-
 
         headers, data = encode_decode(headers,data)
 

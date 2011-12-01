@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
  
 __doc__ = """Tiny HTTP Proxy.
  
@@ -136,30 +136,31 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
     def _send_with_handler(self, soc):
         headers = self.headers
         data = None
-        if 'Content-Length' in headers:
-            count = int(headers['Content-Length'])
+        if 'content-length' in headers:
+            count = int(headers['content-length'])
             data = self.rfile.read(count)
 
         if data and len(data) != count:
             self.log_error('%d missing bytes', count - len(data))
 
         for h in self.handler:
-            try:
-                headers, data = h(headers, data)
-            except:
-                pass
+            #try:
+            headers, data = h(headers, data)
+            #except Exception, e:
+            #    raise e
         
         if data:
-            headers['Content-Length'] = str(len(data))
-        elif 'Content-Length' in headers:
-            headers['Content-Length'] = '0'
+            headers['content-length'] = str(len(data))
+        elif 'content-length' in headers:
+            headers['content-length'] = '0'
 
         for key_val in list(self.headers.items()):
-            soc.send(("%s: %s\r\n" % key_val).encode())
+            soc.send("%s: %s\r\n" % key_val)
         soc.send("\r\n")
         if data:
             soc.send(data)
 
+        print 'Sent'
         def _read_line(soc):
             line = ''
             read = True
@@ -173,7 +174,7 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
                         line += '\r'
                 line += c
 
-        head_line = _read_line(soc)
+        head_line = _read_line(soc) + '\r\n'
         line = _read_line(soc)
         headers = dict()
         while line != '':
@@ -181,33 +182,32 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
             headers[n.strip()] = v.strip()
             line = _read_line(soc)
 
-        data = ''
+        data = None
         if 'Content-Length' in headers:
             count = int(headers['Content-Length'])
-            data = soc.recv(count)
+            if count > 0:
+                data = soc.recv(count)
         else:
             tmp = soc.recv(1024)
             while tmp:
                 data += tmp
                 tmp = soc.recv(1024)
-
+        
         for h in self.handler:
-            try:
-                headers, data = h(headers, data)
-            except:
-                pass
+            headers, data = h(headers, data)
 
         if data:
             headers['Content-Length'] = str(len(data))
+            print 'Data len: %d' % len(data)
         elif 'Content-Length' in headers:
             headers['Content-Length'] = '0'
-
-        self.wfile.write(head_line)
-        for key_val in list(self.headers.items()):
-            self.wfile.write("%s: %s\r\n" % key_val)
-        self.wfile.write("\r\n")
+        
+        self.connection.send(head_line)
+        for key_val in headers.items():
+            self.connection.send("%s: %s\r\n" % key_val)
+        self.connection.send("\r\n")
         if data:
-            self.wfile.write(data)
+            self.connection.send(data)
  
     def _read_write(self, soc, max_idling=20, local=False):
         iw = [self.connection, soc]
@@ -395,16 +395,19 @@ def encode_decode(headers, data):
     if not data:
         return headers, data
 
-
+    #print headers
     if 'X-WCF-Encode' in headers:
         from xml2records import Parser
         p = Parser()
+        print data
+        print '##################################'
         p.feed(data)
         data = dump_records(p.records)
+        print data
         del headers['X-WCF-Encode']
-        headers['Content-type'] = 'application/soap+msbin1'
+        headers['Content-Type'] = 'application/soap+msbin1'
     else:
-        if not headers['Content-type'] == 'application/soap+msbin1':
+        if 'Content-Type' not in headers or headers['Content-Type'] != 'application/soap+msbin1':
             return headers, data
         fp = StringIO(data)
         data = Record.parse(fp)
@@ -414,7 +417,7 @@ def encode_decode(headers, data):
         data = fp.getvalue()
         fp.close()
         headers['X-WCF-Encode'] = '1'
-        headers['Content-type'] = 'text/soap+xml'
+        headers['Content-Type'] = 'text/soap+xml'
     return headers, data
 
 ProxyHandler.handler.append(encode_decode)
