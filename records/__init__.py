@@ -17,6 +17,8 @@ def print_records(records, skip=0, fp=None):
 
     was_el = False
     for r in records:
+        if isinstance(r, EndElementRecord):
+            continue
         if isinstance(r, Element):
             fp.write('\n' + ' ' * skip + str(r))
         else:
@@ -37,6 +39,15 @@ def print_records(records, skip=0, fp=None):
             was_el = False
     return was_el
 
+def repr_records(records, skip=0):
+    if records == None:
+        return
+
+    for r in records:
+        print ' '*skip + str(r)
+        if hasattr(r, 'childs'):
+            repr_records(r.childs, skip+1)
+
 def dump_records(records):
     out = ''
 
@@ -48,7 +59,7 @@ def dump_records(records):
                 msg += ' with EndElement (0x%X)' % r.type
         log.debug(msg)
         log.debug('Value %s' % str(r))
-        if isinstance(r, Element) and len(r.attributes):
+        if isinstance(r, Element) and not isinstance(r, EndElementRecord) and len(r.attributes):
             log.debug(' Attributes:')
             for a in r.attributes:
                 log.debug(' %s: %s' % (type(a).__name__, str(a)))
@@ -56,10 +67,10 @@ def dump_records(records):
         
         if hasattr(r, 'childs'):
             out += dump_records(r.childs)
-            if len(r.childs) and not isinstance(r.childs[-1], Text):
+            if len(r.childs) == 0 or not isinstance(r.childs[-1], Text):
                 log.debug('Write EndElement for %s' % r.name)
                 out += EndElementRecord().to_bytes()
-        elif isinstance(r, Element):
+        elif isinstance(r, Element) and not isinstance(r, EndElementRecord):
             log.debug('Write EndElement for %s' % (r.name,))
             out += EndElementRecord().to_bytes()
 

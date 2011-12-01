@@ -12,7 +12,7 @@ from dictionary import inverted_dict
 
 classes = Record.records.values()
 classes = dict([(c.__name__, c) for c in classes])
-inverted_dict = dict([((n.lower()),v) for n,v in inverted_dict.iteritems()])
+#inverted_dict = dict([(n,v) for n,v in inverted_dict.iteritems()])
 
 
 int_reg = re.compile(r'^-?\d+$')
@@ -20,6 +20,7 @@ uint_reg = re.compile(r'^\d+$')
 uuid_reg = re.compile(r'^urn:uuid:(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
 base64_reg = re.compile(r'^[a-zA-Z0-9/+]*={0,2}$')
 float_reg = re.compile(r'^-?(INF)|(NaN)|(\d+(\.\d+)?)$')
+datetime_reg = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,7})?)?(Z|(\+|-\d{2}:\d{2}))')
 
 class Parser(HTMLParser):
 
@@ -38,26 +39,26 @@ class Parser(HTMLParser):
 
             if len(prefix) == 1:
                 cls_name = 'Element' + prefix.upper() + 'Record'
-                if name.lower() in inverted_dict:
+                if name in inverted_dict:
                     cls_name = 'PrefixDictionary' + cls_name
                     log.debug('New %s: %s' % (cls_name, name))
-                    return classes[cls_name](inverted_dict[name.lower()])
+                    return classes[cls_name](inverted_dict[name])
                 else:
                     cls_name = 'Prefix' + cls_name
                     log.debug('New %s: %s' % (cls_name, name))
                     return classes[cls_name](name)
             else:
-                if name.lower() in inverted_dict:
+                if name in inverted_dict:
                     log.debug('New DictionaryElementRecord: %s:%s' % (prefix, name))
                     return DictionaryElementRecord(prefix,
-                            inverted_dict[name.lower()])
+                            inverted_dict[name])
                 else:
                     log.debug('New ElementRecord: %s:%s' % (prefix, name))
                     return ElementRecord(prefix, name)
         else:
-            if tag.lower() in inverted_dict:
+            if tag in inverted_dict:
                 log.debug('New ShortDictionaryElementRecord: %s' % (tag, ))
-                return ShortDictionaryElementRecord(inverted_dict[tag.lower()])
+                return ShortDictionaryElementRecord(inverted_dict[tag])
             else:
                 log.debug('New ShortElementRecord: %s' % (tag, ))
                 return ShortElementRecord(tag)
@@ -110,8 +111,31 @@ class Parser(HTMLParser):
                 return Bytes32TextRecord(data)
         elif float_reg.match(data):
             return DoubleTextRecord(float(data))
-        elif data.lower() in inverted_dict:
-            return DictionaryTextRecord(inverted_dict[data.lower()])
+        elif data in inverted_dict:
+            return DictionaryTextRecord(inverted_dict[data])
+        elif datetime_reg.match(data) and False:# TODO
+            t = data.split('Z')
+            tz = 0
+            if len(t) > 1:
+                dt = t[0]
+                tz = 1 if len(tz[1]) else 2
+            dt = t[0]
+            dt = dt.split('.')
+            ns = 0
+            if len(dt) > 1:
+                ns = int(dt[1])
+            dt = dt[0]
+            if len(dt) == 10:
+                dt = datetime.datetime.strptime(dt, "%Y-%m-%d")
+            elif len(dt) == 16:
+                dt = datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+            else:
+                dt = datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
+
+            base_diff = 62135596800.0
+            dt = int((time.mktime(dt.timetuple()) - base) * 10 + ms)
+            
+            return DateTimeTextRecord(dt, tz)
         else:
             val = len(data)
             if val < 2**8:
@@ -129,35 +153,35 @@ class Parser(HTMLParser):
             name   = name[name.find(':')+1:]
             
             if prefix == 'xmlns':
-                if value.lower() in inverted_dict:
+                if value in inverted_dict:
                     return DictionaryXmlnsAttributeRecord(name,
-                            inverted_dict[value.lower()])
+                            inverted_dict[value])
                 else:
                     return XmlnsAttributeRecord(name, value)
             elif len(prefix) == 1:
                 value = self._parse_data(value)
                 cls_name = 'Attribute' + prefix.upper() + 'Record'
-                if name.lower() in inverted_dict:
+                if name in inverted_dict:
                     return classes['PrefixDictionary' +
-                            cls_name](inverted_dict[name.lower()], value)
+                            cls_name](inverted_dict[name], value)
                 else:
                     return classes['Prefix' + cls_name](name,value)
             else:
                 value = self._parse_data(value)
-                if name.lower() in inverted_dict:
+                if name in inverted_dict:
                     return DictionaryAttributeRecord(prefix,
-                            inverted_dict[name.lower()], value)
+                            inverted_dict[name], value)
                 else:
                     return AttributeRecord(prefix, name, value)
         elif name == 'xmlns':
-            if value.lower() in inverted_dict:
-                return ShortDictionaryXmlnsAttributeRecord(inverted_dict[value.lower()])
+            if value in inverted_dict:
+                return ShortDictionaryXmlnsAttributeRecord(inverted_dict[value])
             else:
                 return ShortXmlnsAttributeRecord(value)
         else:
             value = self._parse_data(value)
-            if name.lower() in inverted_dict:
-                return ShortDictionaryAttributeRecord(inverted_dict[name.lower()], value)
+            if name in inverted_dict:
+                return ShortDictionaryAttributeRecord(inverted_dict[name], value)
             else:
                 return ShortAttributeRecord(name, value)
 
@@ -183,6 +207,7 @@ class Parser(HTMLParser):
         for n,v in attrs:
             el.attributes.append(self._parse_attr(n,v))
         self.last_record.childs.append(el)
+        #self.last_record.childs.append(EndElementRecord())
     
     def handle_endtag(self, tag):
         if self.data:
@@ -218,7 +243,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     p = Parser()
-    indata = fp.read().strip()
+    indata = fp.read()#.strip()
     fp.close()
     p.feed(indata)
     sys.stdout.write(dump_records(p.records))
