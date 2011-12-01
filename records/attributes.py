@@ -190,7 +190,7 @@ class ShortXmlnsAttributeRecord(Attribute):
     type = 0x08
 
     def __init__(self, value, *args, **kwargs):
-        super(XmlnsAttributeRecord, self).__init__(*args, **kwargs)
+        super(ShortXmlnsAttributeRecord, self).__init__(*args, **kwargs)
         self.value = value
 
     def to_bytes(self):
