@@ -1,3 +1,32 @@
+# vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
+#  Copyright (c) 2011, Timo Schmid <tschmid@ernw.de>
+#  All rights reserved.
+#  
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#  * Redistributions of source code must retain the above copyright 
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  * Neither the name of the ERMW GmbH nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#  HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import struct
 import logging
 
@@ -50,7 +79,7 @@ class MultiByteInt31(object):
             return struct.pack('<BB',
                     value_a | 0x80,
                     value_b)
-        elif value_a != 0:
+        else:
             return struct.pack('<B',
                     value_a)
 
@@ -79,21 +108,38 @@ class Utf8String(object):
 
     def to_bytes(self):
         """
-        >>> Utf8String("abc").to_bytes()
+        >>> Utf8String(u"abc").to_bytes()
         '\\x03\x61\x62\x63'
+        >>> Utf8String(u"\xfcber").to_bytes()
+        '\\x05\\xc3\\xbcber'
+        >>> Utf8String("\\xc3\\xbcber".decode('utf-8')).to_bytes()
+        '\\x05\\xc3\\xbcber'
         """
-        strlen = len(self.value)
+	data   = self.value.encode('utf-8')
+        strlen = len(data)
 
-        return MultiByteInt31(strlen).to_bytes() + self.value
+        return MultiByteInt31(strlen).to_bytes() + data
 
     def __str__(self):
-        return str(self.value)
+        return self.value.decode('latin1')
+
+    def __unicode__(self):
+	return self.value
 
     @classmethod
     def parse(cls, fp):
+	"""
+	>>> from StringIO import StringIO as io
+	>>> fp = io("\\x05\\xc3\\xbcber")
+	>>> s = Utf8String.parse(fp)
+	>>> s.to_bytes()
+        '\\x05\\xc3\\xbcber'
+	>>> print str(s)
+	'über'
+	"""
         lngth = struct.unpack('<B', fp.read(1))[0]
         
-        return cls(fp.read(lngth))
+        return cls(fp.read(lngth).decode('utf-8'))
 
 class Decimal(object):
     def __init__(self, sign, high, low, scale):
