@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+# vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 #  Copyright (c) 2011, Timo Schmid <tschmid@ernw.de>
 #  All rights reserved.
 #  
@@ -27,14 +27,3 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-if __name__ == '__main__':
-    import sys
-    from wcf.records import Record,print_records
-    fp = sys.stdin
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
-        fp = open(filename, 'rb')
-    
-    with fp:
-        records = Record.parse(fp)
-        print_records(records)

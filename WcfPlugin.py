@@ -1,15 +1,21 @@
+# vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
+from __future__ import absolute_import
+from StringIO import StringIO
+import array
+
 from bluec0re import ICallback
 
+from wcf.records import Record, print_records, dump_records
+from wcf.xml2records import Parser
+
+
 def encode_decode(headers, data):
-    from records import Record, print_records, dump_records
-    from StringIO import StringIO
 
     if not data:
         return headers, data
 
 
     if 'X-WCF-Encode' in headers:
-        from xml2records import Parser
         p = Parser()
         p.feed(data)
         data = dump_records(p.records)
@@ -39,7 +45,6 @@ class WcfPlugin(ICallback):
         return type(self).__name__
 
     def processProxyMessage(self, *args, **kwargs):
-        import array
         messageIsRequest = args[1]
         message = args[10]
        

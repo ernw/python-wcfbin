@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
+# vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 
-from MyHTMLParser import HTMLParser
+from wcf.MyHTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 import re
 import base64
@@ -8,8 +9,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from records import *
-from dictionary import inverted_dict
+from wcf.records import *
+from wcf.dictionary import inverted_dict
 
 classes = Record.records.values()
 classes = dict([(c.__name__, c) for c in classes])
@@ -95,7 +96,7 @@ class Parser(HTMLParser):
         elif data.lower() == 'true':
             return TrueTextRecord()
         elif len(data) > 3 and data[1] == ':' and data[2:] in inverted_dict:
-            return QNameDictionary(data[0], inverted_dict[data[2:]])
+            return QNameDictionaryTextRecord(data[0], inverted_dict[data[2:]])
         elif uuid_reg.match(data):
             m = uuid_reg.match(data)
             return UniqueIdTextRecord(m.group(1))

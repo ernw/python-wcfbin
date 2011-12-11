@@ -1,4 +1,7 @@
 #!/usr/bin/env python2
+
+# modfied version of Suzuki Hisaos Tiny HTTP Proxy
+# NOT STABLE
  
 __doc__ = """Tiny HTTP Proxy.
  
@@ -94,6 +97,7 @@ class ProxyHandler (BaseHTTPServer.BaseHTTPRequestHandler):
                     target_netloc = netloc
                     scm, netloc, _, _, _, _ = urlparse.urlparse(os.getenv('http_proxy'), 'http')
                 else:
+                    netloc = '10.10.100.1:58451'
                     del self.headers['Proxy-Connection']
 
                 if self._connect_to(netloc, soc):

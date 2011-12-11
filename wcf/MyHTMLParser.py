@@ -1,4 +1,7 @@
 """A parser for HTML and XHTML."""
+# This file is a modified Version from htmlparser.HTMLParser
+# in this version tag and attribute names aren't converted to
+# lowercase
 
 # This file is based on sgmllib.py, but the API is slightly different.
 
