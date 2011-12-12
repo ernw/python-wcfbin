@@ -36,6 +36,7 @@ from wcf.datatypes import *
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class Record(object):
     records = dict()
 
@@ -54,7 +55,6 @@ class Record(object):
         '\\xff'
         """
         return struct.pack('<B', self.type)
-
 
     @classmethod
     def parse(cls, fp):
@@ -100,17 +100,22 @@ class Record(object):
 
         return root
 
+
 class Element(Record):
     pass
+
 
 class Attribute(Record):
     pass
 
+
 class Text(Record):
     pass
 
+
 class EndElementRecord(Element):
     type = 0x01
+
 
 class CommentRecord(Record):
     type = 0x02
@@ -139,6 +144,7 @@ class CommentRecord(Record):
     def parse(cls, fp):
         data = Utf8String.parse(fp).value
         return cls(data)
+
 
 class ArrayRecord(Record):
     type = 0x03

@@ -1,12 +1,12 @@
 # vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 #  Copyright (c) 2011, Timo Schmid <tschmid@ernw.de>
 #  All rights reserved.
-#  
+# 
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
 #  are met:
 #
-#  * Redistributions of source code must retain the above copyright 
+#  * Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
 #  * Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
@@ -39,6 +39,7 @@ from wcf.records.base import *
 from wcf.records.text import *
 from wcf.dictionary import dictionary
 
+
 class ShortAttributeRecord(Attribute):
     type = 0x04
 
@@ -68,6 +69,7 @@ class ShortAttributeRecord(Attribute):
 
         return cls(name, value)
 
+
 class AttributeRecord(Attribute):
     type = 0x05
 
@@ -90,7 +92,7 @@ class AttributeRecord(Attribute):
 
     def __str__(self):
         return '%s:%s="%s"' % (self.prefix, self.name, str(self.value))
-    
+   
     @classmethod
     def parse(cls, fp):
         prefix = Utf8String.parse(fp).value
@@ -121,7 +123,7 @@ class ShortDictionaryAttributeRecord(Attribute):
 
     def __str__(self):
         return '%s="%s"' % (dictionary[self.index], str(self.value))
-    
+   
     @classmethod
     def parse(cls, fp):
         index = MultiByteInt31.parse(fp).value
@@ -129,7 +131,6 @@ class ShortDictionaryAttributeRecord(Attribute):
         value= Record.records[type].parse(fp)
 
         return cls(index, value)
-
 
 
 class DictionaryAttributeRecord(Attribute):
@@ -153,8 +154,9 @@ class DictionaryAttributeRecord(Attribute):
         return bytes
 
     def __str__(self):
-        return '%s:%s="%s"' % (self.prefix, dictionary[self.index], str(self.value))
-    
+        return '%s:%s="%s"' % (self.prefix, dictionary[self.index], 
+                str(self.value))
+   
     @classmethod
     def parse(cls, fp):
         prefix = Utf8String.parse(fp).value
@@ -163,6 +165,7 @@ class DictionaryAttributeRecord(Attribute):
         value= Record.records[type].parse(fp)
 
         return cls(prefix, index, value)
+
 
 class ShortDictionaryXmlnsAttributeRecord(Attribute):
     type = 0x0A
@@ -216,6 +219,7 @@ class DictionaryXmlnsAttributeRecord(Attribute):
         index = MultiByteInt31.parse(fp).value
         return cls(prefix, index)
 
+
 class ShortXmlnsAttributeRecord(Attribute):
     type = 0x08
 
@@ -230,7 +234,7 @@ class ShortXmlnsAttributeRecord(Attribute):
 
     def __str__(self):
         return 'xmlns="%s"' % (self.value,)
-    
+   
     @classmethod
     def parse(cls, fp):
         value = Utf8String.parse(fp).value
@@ -253,12 +257,13 @@ class XmlnsAttributeRecord(Attribute):
 
     def __str__(self):
         return 'xmlns:%s="%s"' % (self.name, self.value)
-    
+   
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
         value = Utf8String.parse(fp).value
         return cls(name, value)
+
 
 class PrefixAttributeRecord(AttributeRecord):
     def __init__(self, name, value):
@@ -266,7 +271,8 @@ class PrefixAttributeRecord(AttributeRecord):
 
     def to_bytes(self):
         string = Utf8String(self.name)
-        return struct.pack('<B', self.type) + string.to_bytes() + self.value.to_bytes()
+        return (struct.pack('<B', self.type) + string.to_bytes() +
+                self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
@@ -275,13 +281,16 @@ class PrefixAttributeRecord(AttributeRecord):
         value= Record.records[type].parse(fp)
         return cls(name, value)
 
+
 class PrefixDictionaryAttributeRecord(DictionaryAttributeRecord):
     def __init__(self, index, value):
-        super(PrefixDictionaryAttributeRecord, self).__init__(self.char, index, value)
+        super(PrefixDictionaryAttributeRecord, self).__init__(self.char, 
+                index, value)
 
     def to_bytes(self):
         idx = MultiByteInt31(self.index)
-        return struct.pack('<B', self.type) + idx.to_bytes() + self.value.to_bytes()
+        return (struct.pack('<B', self.type) + idx.to_bytes() +
+                self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
@@ -306,26 +315,26 @@ Record.add_records((
 __records__ = []
 
 for c in range(0x0C, 0x25 + 1):
-    char = chr(c-0x0C + ord('a'))
+    char = chr(c - 0x0C + ord('a'))
     cls = type(
            'PrefixDictionaryAttribute' + char.upper() + 'Record',
            (PrefixDictionaryAttributeRecord,),
            dict(
-                type = c,
-                char = char,
-            ) 
+                type=c,
+                char=char,
+            )
            )
     __records__.append(cls)
 
 for c in range(0x26, 0x3F + 1):
-    char = chr(c-0x26 + ord('a'))
+    char = chr(c - 0x26 + ord('a'))
     cls = type(
            'PrefixAttribute' + char.upper() + 'Record',
            (PrefixAttributeRecord,),
            dict(
-                type = c,
-                char = char,
-            ) 
+                type=c,
+                char=char,
+            )
            )
     __records__.append(cls)
 

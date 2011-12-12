@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 # vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 
+from __future__ import absolute_import
+
 from wcf.MyHTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 import re
@@ -12,6 +14,7 @@ log = logging.getLogger(__name__)
 from wcf.records import *
 from wcf.dictionary import inverted_dict
 
+
 classes = Record.records.values()
 classes = dict([(c.__name__, c) for c in classes])
 #inverted_dict = dict([(n,v) for n,v in inverted_dict.iteritems()])
@@ -22,10 +25,12 @@ def unescape(s):
 
 int_reg = re.compile(r'^-?\d+$')
 uint_reg = re.compile(r'^\d+$')
-uuid_reg = re.compile(r'^urn:uuid:(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
+uuid_reg = re.compile(r'^(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
+uniqueid_reg = re.compile(r'^urn:uuid:(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
 base64_reg = re.compile(r'^[a-zA-Z0-9/+]*={0,2}$')
 float_reg = re.compile(r'^-?(INF)|(NaN)|(\d+(\.\d+)?)$')
 datetime_reg = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,7})?)?(Z|(\+|-\d{2}:\d{2}))')
+
 
 class Parser(HTMLParser):
 
@@ -54,7 +59,8 @@ class Parser(HTMLParser):
                     return classes[cls_name](name)
             else:
                 if name in inverted_dict:
-                    log.debug('New DictionaryElementRecord: %s:%s' % (prefix, name))
+                    log.debug('New DictionaryElementRecord: %s:%s' % 
+                            (prefix, name))
                     return DictionaryElementRecord(prefix,
                             inverted_dict[name])
                 else:
@@ -77,7 +83,7 @@ class Parser(HTMLParser):
         self.last_record.childs.append(textrecord)
         #if end:
         #    textrecord.type += 1
-        
+ 
     def _parse_data(self, data):
         data = data.strip()
         b64 = False
@@ -97,9 +103,12 @@ class Parser(HTMLParser):
             return TrueTextRecord()
         elif len(data) > 3 and data[1] == ':' and data[2:] in inverted_dict:
             return QNameDictionaryTextRecord(data[0], inverted_dict[data[2:]])
-        elif uuid_reg.match(data):
+        elif uniqueid_reg.match(data):
             m = uuid_reg.match(data)
             return UniqueIdTextRecord(m.group(1))
+        elif uuid_reg.match(data):
+            m = uuid_reg.match(data)
+            return UuidTextRecord(m.group(1))
         elif int_reg.match(data):
             val = int(data)
             if val < 2**8:
@@ -125,7 +134,7 @@ class Parser(HTMLParser):
             return DoubleTextRecord(float(data))
         elif data in inverted_dict:
             return DictionaryTextRecord(inverted_dict[data])
-        elif datetime_reg.match(data) and False:# TODO
+        elif datetime_reg.match(data) and False:  # TODO
             t = data.split('Z')
             tz = 0
             if len(t) > 1:
@@ -146,7 +155,7 @@ class Parser(HTMLParser):
 
             base_diff = 62135596800.0
             dt = int((time.mktime(dt.timetuple()) - base) * 10 + ms)
-            
+           
             return DateTimeTextRecord(dt, tz)
         else:
             val = len(data)
@@ -157,13 +166,12 @@ class Parser(HTMLParser):
             elif val < 2**32:
                 return Char32TextRecord(data)
 
-
     def _parse_attr(self, name, value):
 
         if ':' in name:
             prefix = name[:name.find(':')]
             name   = name[name.find(':')+1:]
-            
+           
             if prefix == 'xmlns':
                 if value in inverted_dict:
                     return DictionaryXmlnsAttributeRecord(name,
@@ -177,7 +185,7 @@ class Parser(HTMLParser):
                     return classes['PrefixDictionary' +
                             cls_name](inverted_dict[name], value)
                 else:
-                    return classes['Prefix' + cls_name](name,value)
+                    return classes['Prefix' + cls_name](name, value)
             else:
                 value = self._parse_data(value)
                 if name in inverted_dict:
@@ -197,30 +205,29 @@ class Parser(HTMLParser):
             else:
                 return ShortAttributeRecord(name, value)
 
-
     def handle_starttag(self, tag, attrs):
         if self.data:
-            self._store_data(self.data,False)
+            self._store_data(self.data, False)
             self.data = None
-        
+       
         el = self._parse_tag(tag)
-        for n,v in attrs:
-            el.attributes.append(self._parse_attr(n,v))
+        for n, v in attrs:
+            el.attributes.append(self._parse_attr(n, v))
         self.last_record.childs.append(el)
         el.parent = self.last_record
         self.last_record = el
-    
+   
     def handle_startendtag(self, tag, attrs):
         if self.data:
-            self._store_data(self.data,False)
+            self._store_data(self.data, False)
             self.data = None
-        
+       
         el = self._parse_tag(tag)
-        for n,v in attrs:
-            el.attributes.append(self._parse_attr(n,v))
+        for n, v in attrs:
+            el.attributes.append(self._parse_attr(n, v))
         self.last_record.childs.append(el)
         #self.last_record.childs.append(EndElementRecord())
-    
+   
     def handle_endtag(self, tag):
         if self.data:
             self._store_data(self.data, True)
@@ -230,7 +237,7 @@ class Parser(HTMLParser):
 
         self.last_record = self.last_record.parent
 
-    def handle_data(self,data):
+    def handle_data(self, data):
         if not self.data:
             self.data = data
         else:
@@ -244,7 +251,7 @@ class Parser(HTMLParser):
 
     handle_decl = handle_data
 
-    def handle_comment(self,comment):
+    def handle_comment(self, comment):
         if data:
             self._store_data(self.data, False)
             self.data = None
@@ -254,7 +261,7 @@ class Parser(HTMLParser):
 
 if __name__ == '__main__':
     import sys
-    
+   
     fp = sys.stdin
 
     if len(sys.argv) > 1:
