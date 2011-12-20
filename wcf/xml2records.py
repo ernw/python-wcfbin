@@ -104,7 +104,7 @@ class Parser(HTMLParser):
         elif len(data) > 3 and data[1] == ':' and data[2:] in inverted_dict:
             return QNameDictionaryTextRecord(data[0], inverted_dict[data[2:]])
         elif uniqueid_reg.match(data):
-            m = uuid_reg.match(data)
+            m = uniqueid_reg.match(data)
             return UniqueIdTextRecord(m.group(1))
         elif uuid_reg.match(data):
             m = uuid_reg.match(data)
