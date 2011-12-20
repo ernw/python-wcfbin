@@ -38,6 +38,15 @@ from wcf.records.attributes import *
 from wcf.records.elements import *
 
 def print_records(records, skip=0, fp=None):
+    """
+    prints the given record tree into a file like object
+    
+    Keyword arguments:
+    records -- a tree of record objects
+    skip -- start value for intending (Default: 0)
+    fp -- file like object to print to (Default: sys.stdout)
+    
+    """
     if records == None:
         return
     if fp == None:
@@ -77,6 +86,13 @@ def repr_records(records, skip=0):
             repr_records(r.childs, skip+1)
 
 def dump_records(records):
+    """
+    returns the byte representation of a given record tree
+
+    Keyword arguments:
+    records -- the record tree
+    
+    """
     out = ''
 
     for r in records:
