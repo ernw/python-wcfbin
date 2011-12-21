@@ -6,3 +6,9 @@ __pycache__
 *.class
 *.bak
 *.swp
+*.orig
+*.BASE*
+*.LOCAL*
+*.REMOTE*
+data
+*.egg-info
