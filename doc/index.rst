@@ -11,6 +11,25 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   blogpost.rst
+   record_list.rst
+
+Blogpost
+========
+.. include:: blogpost.rst
+
+Main API
+========
+
+.. autoclass:: wcf.records.Record
+    :members:
+
+.. automodule:: wcf.records
+    :members:
+
+.. autoclass:: wcf.xml2records.XMLParser
+    :members:
+
 Indices and tables
 ==================
 
