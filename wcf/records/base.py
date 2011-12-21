@@ -42,6 +42,11 @@ class Record(object):
 
     @classmethod
     def add_records(cls, records):
+        """adds records to the lookup table
+
+        :param records: list of Record subclasses
+        :type records: list(Record)
+        """
         for r in records:
             Record.records[r.type] = r
 
@@ -51,6 +56,8 @@ class Record(object):
 
     def to_bytes(self):
         """
+        Generates the representing bytes of the record
+
         >>> Record(0xff).to_bytes()
         '\\xff'
         """
@@ -58,6 +65,13 @@ class Record(object):
 
     @classmethod
     def parse(cls, fp):
+        """
+        Parses the binary data from fp into Record objects
+
+        :param fp: file like object to read from
+        :returns: a root Record object with its child Records
+        :rtype: Record
+        """
         if cls != Record:
             return cls()
         root = []

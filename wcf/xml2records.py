@@ -32,7 +32,7 @@ float_reg = re.compile(r'^-?(INF)|(NaN)|(\d+(\.\d+)?)$')
 datetime_reg = re.compile(r'^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,7})?)?(Z|(\+|-\d{2}:\d{2}))')
 
 
-class Parser(HTMLParser):
+class XMLParser(HTMLParser):
 
     def reset(self):
         HTMLParser.reset(self)
@@ -258,6 +258,38 @@ class Parser(HTMLParser):
 
         self.last_record.childs.append(CommentRecord(comment))
 
+    @classmethod
+    def parse(cls, data):
+        """
+        Parses a XML String/Fileobject into a Record tree
+
+        :param data: a XML string or fileobject
+        :returns: a Record tree
+
+        >>> from wcf.records import dump_records, print_records
+        >>> from wcf.xml2records import XMLParser
+        >>> r = XMLParser.parse('<s:Envelope><b:Body /></s:Envelope>')
+        >>> dump_records(r)
+        'V\\x02E\\x0e\\x01\\x01'
+        >>> b = print_records(r)
+        <s:Envelope >
+         <b:Body ></b:Body>
+        </s:Envelope>
+        """
+        p = cls()
+        if isinstance(data, str):
+            pass
+        elif hasattr(data, 'read'):
+            tmp = data.read()
+            data.close()
+            data = tmp
+        else:
+            raise ValueError("%s has an incompatible type %s" % (data,
+                type(data)))
+        
+        p.feed(data)
+
+        return p.records
 
 if __name__ == '__main__':
     import sys
@@ -269,7 +301,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
 
-    p = Parser()
+    p = XMLParser()
     indata = fp.read()#.strip()
     fp.close()
     p.feed(indata)

@@ -6,7 +6,7 @@ import array
 from bluec0re import ICallback
 
 from wcf.records import Record, print_records, dump_records
-from wcf.xml2records import Parser
+from wcf.xml2records import XMLParser
 
 
 def encode_decode(headers, data):
@@ -16,9 +16,7 @@ def encode_decode(headers, data):
 
 
     if 'X-WCF-Encode' in headers:
-        p = Parser()
-        p.feed(data)
-        data = dump_records(p.records)
+        data = dump_records(XMLParser.parse(data))
         del headers['X-WCF-Encode']
         headers['Content-Type'] = 'application/soap+msbin1'
         headers['Content-Length'] = str(len(data))
