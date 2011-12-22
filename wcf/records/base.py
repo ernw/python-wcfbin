@@ -58,10 +58,17 @@ class Record(object):
         """
         Generates the representing bytes of the record
 
+        >>> from wcf.records import *
         >>> Record(0xff).to_bytes()
         '\\xff'
+        >>> ElementRecord('a', 'test').to_bytes()
+        'A\\x01a\\x04test'
         """
         return struct.pack('<B', self.type)
+
+    def __repr__(self):
+        args = ['type=0x%X' % self.type]
+        return '<%s(%s)>' % (type(self).__name__, ','.join(args))
 
     @classmethod
     def parse(cls, fp):
@@ -71,6 +78,19 @@ class Record(object):
         :param fp: file like object to read from
         :returns: a root Record object with its child Records
         :rtype: Record
+
+        >>> from wcf.records import *
+        >>> from StringIO import StringIO as io
+        >>> buf = io('A\\x01a\\x04test\\x01')
+        >>> r = Record.parse(buf)
+        >>> r
+        [<ElementRecord(type=0x41)>]
+        >>> str(r[0])
+        '<a:test >'
+        >>> dump_records(r)
+        'A\\x01a\\x04test\\x01'
+        >>> _ = print_records(r)
+        <a:test ></a:test>
         """
         if cls != Record:
             return cls()

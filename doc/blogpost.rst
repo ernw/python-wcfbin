@@ -9,22 +9,22 @@ streams exists in .Net itself (and there mostly with validation and/or
 auto correction features), we had decided to write our own python library
 according to Microsoft's `Open Specification <http://msdn.microsoft.com/en-us/library/cc219210(v=PROT.10).aspx>`_.
 
-The library has a rudimentary commandline interface for converting xml to
+The library has a rudimentary commandline interface for converting XML to
 WCF-Binary and vice versa, as well as a plugin for our Burp-Python proxy.
 
 The commandline interface consists of two python scripts:
 
-+------------+---------------------------------+------------------------------+
-| Script     | Description                     | Examples                     |
-+============+=================================+==============================+
-| wcf2xml.py | | converts WCF-Binary to XML    | | ./wcf2xml.py request.bin   |
-|            | | reads from stdin or from file | | ./wcf2xml.py < request.bin |
-|            | | writes to stdout              |                              |
-+------------+---------------------------------+------------------------------+
-| xml2wcf.py | | converts XML to WCF-Binary    | | ./xml2wcf.py request.xml   |
-|            | | reads from stdin or from file | | ./xml2wcf.py < request.xml |
-|            | | writes to stdout              |                              |
-+------------+---------------------------------+------------------------------+
++------------+------------------------------------+------------------------------+
+| Script     | Description                        | Examples                     |
++============+====================================+==============================+
+| wcf2xml.py | * converts WCF-Binary to XML       | | ./wcf2xml.py request.bin   |
+|            |    * reads from stdin or from file | | ./wcf2xml.py < request.bin |
+|            |    * writes to stdout              |                              |
++------------+------------------------------------+------------------------------+
+| xml2wcf.py | * converts XML to WCF-Binary       | | ./xml2wcf.py request.xml   |
+|            |    * reads from stdin or from file | | ./xml2wcf.py < request.xml |
+|            |    * writes to stdout              |                              |
++------------+------------------------------------+------------------------------+
 
 View and edit WCF-Binary-streams with Burp Suite 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,6 +49,19 @@ At the moment you'll need three Burp instances to use all Burp features.
 The first one decodes and encodes the data from/to the client. The 
 second one operates on the XML like it was a normal request/response. The third 
 one encodes/decodes the data to/from the server.
+
+.. graphviz::
+    
+    graph strucure {
+        rankdir=LR;
+        burp_c [shape=box,label="'Client-Burp'\nPort 55666\nWcfPlugin"];
+        burp [shape=box,label="'Cleartext-Burp'\nPort 55667",color=green];
+        burp_s [shape=box,label="'Server-Burp'\nPort 55668\nWcfPlugin"];
+        client -- server [label="normal communication without Burp\n(WCF-Binary)",color=red];
+        client -- burp_c [label="WCF-Binary",color=blue];
+        burp_c -- burp -- burp_s [label="XML",color=green];
+        burp_s -- server [label="WCF-Binary",color=blue];
+    }
 
 But we are working on a one-Burp-solution.
 
