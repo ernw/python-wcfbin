@@ -277,17 +277,16 @@ class XMLParser(HTMLParser):
         </s:Envelope>
         """
         p = cls()
+        xml = None
         if isinstance(data, str):
-            pass
+            xml = data
         elif hasattr(data, 'read'):
-            tmp = data.read()
-            data.close()
-            data = tmp
+            xml = data.read()
         else:
             raise ValueError("%s has an incompatible type %s" % (data,
                 type(data)))
         
-        p.feed(data)
+        p.feed(xml)
 
         return p.records
 
