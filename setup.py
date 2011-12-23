@@ -10,7 +10,8 @@ setup(
     license = "BSD",
     keywords = "wcf wcf-binary xml",
     url = "",
-    packages=['wcf', 'tests'],
+    packages=['wcf', 'wcf.records', 'tests'],
+    scripts=['wcf2xml.py', 'xml2wcf.py'],
     long_description="",
     test_suite="tests.alltests.Suite",
     classifiers=[
