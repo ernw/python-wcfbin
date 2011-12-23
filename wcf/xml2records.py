@@ -20,9 +20,6 @@ classes = dict([(c.__name__, c) for c in classes])
 #inverted_dict = dict([(n,v) for n,v in inverted_dict.iteritems()])
 
 
-def unescape(s):
-    return chr(name2codepoint[s]) if (s in name2codepoint) else "&" + s + ";"
-
 int_reg = re.compile(r'^-?\d+$')
 uint_reg = re.compile(r'^\d+$')
 uuid_reg = re.compile(r'^(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
@@ -160,11 +157,11 @@ class XMLParser(HTMLParser):
         else:
             val = len(data)
             if val < 2**8:
-                return Char8TextRecord(data)
+                return Chars8TextRecord(data)
             elif val < 2**16:
-                return Char16TextRecord(data)
+                return Chars16TextRecord(data)
             elif val < 2**32:
-                return Char32TextRecord(data)
+                return Chars32TextRecord(data)
 
     def _parse_attr(self, name, value):
 
@@ -244,10 +241,13 @@ class XMLParser(HTMLParser):
             self.data += data
 
     def handle_charref(self, name):
-        self.handle_data(chr(int(name, 16)))
+        if name[0] == 'x':
+            self.handle_data(chr(int(name[1:], 16)))
+        else:
+            self.handle_data(chr(int(name, 10)))
 
     def handle_entityref(self, name):
-        self.handle_data(unescape(name))
+        self.handle_data(self.unescape("&%s;" % name))
 
     handle_decl = handle_data
 
@@ -257,6 +257,32 @@ class XMLParser(HTMLParser):
             self.data = None
 
         self.last_record.childs.append(CommentRecord(comment))
+
+    def parse_marked_section(self, i, report=1):
+        from markupbase import _markedsectionclose, _msmarkedsectionclose
+        rawdata= self.rawdata
+        assert rawdata[i:i+3] == '<![', "unexpected call to parse_marked_section()"
+        sectName, j = self._scan_name( i+3, i )
+        if j < 0:
+            return j
+        if sectName in ("temp", "cdata", "ignore", "include", "rcdata"):
+            # look for standard ]]> ending
+            match= _markedsectionclose.search(rawdata, i+3)
+        elif sectName in ("if", "else", "endif"):
+            # look for MS Office ]> ending
+            match= _msmarkedsectionclose.search(rawdata, i+3)
+        else:
+            self.error('unknown status keyword %r in marked section' % rawdata[i+3:j])
+        if not match:
+            return -1
+        if report:
+            if sectName == "cdata":
+                assert rawdata[j] == '['
+                self.handle_data(rawdata[j+1:match.start(0)])
+            else:
+                j = match.start(0)
+                self.unknown_decl(rawdata[i+3: j])
+        return match.end(0)
 
     @classmethod
     def parse(cls, data):

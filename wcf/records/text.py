@@ -418,60 +418,66 @@ class DatetimeTextRecord(Text):
         return DatetimeTextRecord(value, tz)
 
 
-class Char8TextRecord(Text):
+class Chars8TextRecord(Text):
     type = 0x98
 
     def __init__(self, value):
-        self.value = value
+        if isinstance(value, unicode):
+            self.value = value
+        else:
+            self.value = unicode(value)
 
     def __str__(self):
         return escape(self.value)
 
     def to_bytes(self):
+        data = self.value.encode('utf-8')
         bytes  = struct.pack('<B', self.type)
-        bytes += struct.pack('<B', len(self.value))
-        bytes += self.value
+        bytes += struct.pack('<B', len(data))
+        bytes += data
 
         return bytes
 
     @classmethod
     def parse(cls, fp):
         ln = struct.unpack('<B', fp.read(1))[0]
-        value = fp.read(ln)
+        value = fp.read(ln).decode('utf-8')
         return cls(value)
 
 
-class Char16TextRecord(Char8TextRecord):
+class Chars16TextRecord(Chars8TextRecord):
     type = 0x9A
 
     def to_bytes(self):
+        data = self.value.encode('utf-8')
         bytes  = struct.pack('<B', self.type)
-        bytes += struct.pack('<H', len(self.value))
-        bytes += self.value
+        bytes += struct.pack('<H', len(data))
+        bytes += data
 
         return bytes
 
     @classmethod
     def parse(cls, fp):
         ln = struct.unpack('<H', fp.read(2))[0]
-        value = fp.read(ln)
+        value = fp.read(ln).decode('utf-8')
         return cls(value)
 
 
-class Char32TextRecord(Char8TextRecord):
+class Chars32TextRecord(Chars8TextRecord):
     type = 0x9C
 
     def to_bytes(self):
+        data = self.value.encode('utf-8')
         bytes  = struct.pack('<B', self.type)
-        bytes += struct.pack('<I', len(self.value))
-        bytes += self.value
+        bytes += struct.pack('<I', len(data))
+        bytes += data
 
         return bytes
 
     @classmethod
     def parse(cls, fp):
         ln = struct.unpack('<I', fp.read(4))[0]
-        value = fp.read(ln)
+        value = fp.read(ln).decode('utf-8')
         return cls(value)
 
 
@@ -662,9 +668,9 @@ Record.add_records((ZeroTextRecord,
         DoubleTextRecord,
         DecimalTextRecord,
         DatetimeTextRecord,
-        Char8TextRecord,
-        Char16TextRecord,
-        Char32TextRecord,
+        Chars8TextRecord,
+        Chars16TextRecord,
+        Chars32TextRecord,
         UniqueIdTextRecord,
         UuidTextRecord,
         Bytes8TextRecord,
