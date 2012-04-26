@@ -32,6 +32,7 @@ import struct
 import base64
 import datetime
 import logging
+import uuid
 from htmlentitydefs import codepoint2name
 
 
@@ -484,24 +485,8 @@ class Chars32TextRecord(Chars8TextRecord):
 class UniqueIdTextRecord(Text):
     type = 0xAC
 
-    def __init__(self, uuid):
-        if isinstance(uuid, list) or isinstance(uuid, tuple):
-            self.uuid = uuid
-        else:
-            if uuid.startswith('urn:uuid'):
-                uuid = uuid[9:]
-            uuid = uuid.split('-')
-            tmp = uuid[0:3]
-            tmp.append(uuid[3][0:2])
-            tmp.append(uuid[3][2:])
-            tmp.append(uuid[4][0:2])
-            tmp.append(uuid[4][2:4])
-            tmp.append(uuid[4][4:6])
-            tmp.append(uuid[4][6:8])
-            tmp.append(uuid[4][8:10])
-            tmp.append(uuid[4][10:])
-
-            self.uuid = [int(s, 16) for s in tmp]
+    def __init__(self, *args, **kwargs):
+        self.uuid = uuid.UUID(*args, **kwargs)
 
     def to_bytes(self):
         """
@@ -509,27 +494,28 @@ class UniqueIdTextRecord(Text):
         '\\xac\\x00\\x11"3DUfw\\x88\\x99\\xaa\\xbb\\xcc\\xdd\\xee\\xff'
         """
         bytes = super(UniqueIdTextRecord, self).to_bytes()
-        bytes += struct.pack('<IHHBBBBBBBB', *self.uuid)
+        bytes += self.uuid.bytes
 
         return bytes
 
     def __str__(self):
-        #return 'urn:uuid:{0:08x}-{1:04x}-{2:04x}-{3:02x}{4:02x}-{5:02x}{6:02x}{7:02x}{8:02x}{9:02x}{10:02x}'.format(*self.uuid)
-        return 'urn:uuid:%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x' % (
-                tuple(self.uuid))
+        return self.uuid.urn
 
     @classmethod
     def parse(cls, fp):
-        uuid = struct.unpack('<IHHBBBBBBBB', fp.read(16))
-        return cls(uuid)
+        u = fp.read(16)
+        return cls(bytes=u)
 
 
 class UuidTextRecord(UniqueIdTextRecord):
     type = 0xB0
 
     def __str__(self):
-        return '%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x' % (
-                tuple(self.uuid))
+        """
+        >>> str(UuidTextRecord('urn:uuid:33221100-5544-7766-8899-aabbccddeeff').to_bytes())
+        '33221100-5544-7766-8899-aabbccddeeff'
+        """
+        return str(self.uuid)
 
 
 class Bytes8TextRecord(Text):
