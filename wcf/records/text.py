@@ -494,7 +494,7 @@ class UniqueIdTextRecord(Text):
         '\\xac\\x00\\x11"3DUfw\\x88\\x99\\xaa\\xbb\\xcc\\xdd\\xee\\xff'
         """
         bytes = super(UniqueIdTextRecord, self).to_bytes()
-        bytes += self.uuid.bytes
+        bytes += self.uuid.bytes_le
 
         return bytes
 
@@ -504,7 +504,8 @@ class UniqueIdTextRecord(Text):
     @classmethod
     def parse(cls, fp):
         u = fp.read(16)
-        return cls(bytes=u)
+        
+        return cls(bytes_le=u)
 
 
 class UuidTextRecord(UniqueIdTextRecord):
@@ -512,7 +513,7 @@ class UuidTextRecord(UniqueIdTextRecord):
 
     def __str__(self):
         """
-        >>> str(UuidTextRecord('urn:uuid:33221100-5544-7766-8899-aabbccddeeff').to_bytes())
+        >>> str(UuidTextRecord('urn:uuid:33221100-5544-7766-8899-aabbccddeeff'))
         '33221100-5544-7766-8899-aabbccddeeff'
         """
         return str(self.uuid)
