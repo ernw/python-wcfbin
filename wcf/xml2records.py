@@ -20,8 +20,8 @@ classes = dict([(c.__name__, c) for c in classes])
 #inverted_dict = dict([(n,v) for n,v in inverted_dict.iteritems()])
 
 
-int_reg = re.compile(r'^-?\d+$')
-uint_reg = re.compile(r'^\d+$')
+int_reg = re.compile(r'^-?[1-9]\d*$')
+uint_reg = re.compile(r'^[1-9]\d*$')
 uuid_reg = re.compile(r'^(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
 uniqueid_reg = re.compile(r'^urn:uuid:(([a-fA-F0-9]{8})-(([a-fA-F0-9]{4})-){3}([a-fA-F0-9]{12}))$')
 base64_reg = re.compile(r'^[a-zA-Z0-9/+]*={0,2}$')
@@ -108,14 +108,16 @@ class XMLParser(HTMLParser):
             return UuidTextRecord(m.group(1))
         elif int_reg.match(data):
             val = int(data)
-            if val < 2**8:
+            if -128 <= val < 128:
                 return Int8TextRecord(val)
-            elif val < 2**16:
+            elif -2**16/2 <= val < 2**16/2:
                 return Int16TextRecord(val)
-            elif val < 2**32:
+            elif -2**32/2 <= val < 2**32/2:
                 return Int32TextRecord(val)
-            elif val < 2**64:
+            elif -2**64 <= val < 2**64/2:
                 return Int64TextRecord(val)
+            elif 0 <= val < 2**64:
+                return UInt64TextRecord(val)
         elif data == '':
             return EmptyTextRecord()
         elif b64:
