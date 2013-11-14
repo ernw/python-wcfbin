@@ -156,14 +156,15 @@ class XMLParser(HTMLParser):
             dt = int((time.mktime(dt.timetuple()) - base) * 10 + ms)
            
             return DateTimeTextRecord(dt, tz)
-        else:
-            val = len(data)
-            if val < 2**8:
-                return Chars8TextRecord(data)
-            elif val < 2**16:
-                return Chars16TextRecord(data)
-            elif val < 2**32:
-                return Chars32TextRecord(data)
+        
+        # text as fallback
+        val = len(data)
+        if val < 2**8:
+            return Chars8TextRecord(data)
+        elif val < 2**16:
+            return Chars16TextRecord(data)
+        elif val < 2**32:
+            return Chars32TextRecord(data)
 
     def _parse_attr(self, name, value):
 
