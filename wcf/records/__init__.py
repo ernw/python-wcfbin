@@ -37,7 +37,16 @@ from wcf.records.text import *
 from wcf.records.attributes import *
 from wcf.records.elements import *
 
-def print_records(records, skip=0, fp=None):
+def print_records(records, skip=0, fp=None, first_call=True):
+    """prints the given record tree into a file like object
+    
+    :param records: a tree of record objects
+    :type records: wcf.records.Record
+    :param skip: start value for intending (Default: 0)
+    :type skip: int
+    :param fp: file like object to print to (Default: sys.stdout)
+    
+    """
     if records == None:
         return
     if fp == None:
@@ -48,13 +57,13 @@ def print_records(records, skip=0, fp=None):
         if isinstance(r, EndElementRecord):
             continue
         if isinstance(r, Element):
-            fp.write('\n' + ' ' * skip + str(r))
+            fp.write(('\n' if not first_call else '') + ' ' * skip + str(r))
         else:
             fp.write(str(r))
        
         new_line = False
         if hasattr(r, 'childs'):
-            new_line = print_records(r.childs, skip+1, fp)
+            new_line = print_records(r.childs, skip+1, fp, False)
         if isinstance(r, Element):
             if new_line:
                 fp.write('\n' + ' ' * skip)
@@ -77,6 +86,14 @@ def repr_records(records, skip=0):
             repr_records(r.childs, skip+1)
 
 def dump_records(records):
+    """
+    returns the byte representation of a given record tree
+
+    :param records: the record tree
+    :type records: wcf.records.Record
+    :returns: a bytestring
+    :rtype: str
+    """
     out = ''
 
     for r in records:

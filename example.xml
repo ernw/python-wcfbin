@@ -1,0 +1,20 @@
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <s:Header>
+      <a:Action s:mustUnderstand="1" u:Id="_1">http://example.com/Method</a:Action>
+    <a:MessageID u:Id="_2">urn:uuid:7c68b453-7dfb-4a2d-ad42-56a5dcbfab7f</a:MessageID>
+    <a:ReplyTo u:Id="_3">
+      <a:Address>http://www.w3.org/2005/08/addressing/anonymous</a:Address>
+    </a:ReplyTo>
+    <a:To s:mustUnderstand="1" u:Id="_4">http://example.com/ExampleService</a:To>
+  </s:Header>
+  <s:Body u:Id="_5">
+    <foo>
+      <![CDATA[Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam lectus nec dui eleifend adipiscing. Aenean ac orci eu ante posuere scelerisque dignissim viverra odio. Nunc commodo ornare tincidunt. Nulla vitae volutpat augue. Praesent interdum dapibus elit, sed aliquam mi elementum eget. Curabitur pharetra pharetra euismod. Nulla ullamcorper, sapien et sagittis faucibus, neque nulla lobortis magna, sit amet hendrerit metus metus a arcu. Donec egestas justo venenatis nibh pretium tempus.
+
+      Nam elementum dolor ac leo lacinia vel posuere felis porta. Vestibulum ultricies, eros at volutpat varius, ante justo cursus dui, ut semper tortor elit non elit. Aliquam blandit bibendum sapien eu porta. Curabitur condimentum tristique elit at varius. Nam interdum dignissim tempus. Nulla molestie sapien nec nunc scelerisque a tempor justo elementum. Integer leo arcu, suscipit ut faucibus ac, consectetur ut augue. Fusce gravida nibh ac sapien vestibulum et condimentum enim aliquam. Aliquam eget risus ultricies massa interdum scelerisque. ]]>
+    </foo>
+    <bar>
+        abcd&#32;ef&#x20;gh
+    </bar>
+  </s:Body>
+</s:Envelope>

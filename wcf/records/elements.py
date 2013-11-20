@@ -1,12 +1,12 @@
 # vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 #  Copyright (c) 2011, Timo Schmid <tschmid@ernw.de>
 #  All rights reserved.
-#  
+# 
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
 #  are met:
 #
-#  * Redistributions of source code must retain the above copyright 
+#  * Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
 #  * Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
@@ -38,6 +38,7 @@ from wcf.datatypes import *
 from wcf.records.base import *
 from wcf.dictionary import *
 
+
 class ShortElementRecord(Element):
     type = 0x40
 
@@ -53,7 +54,7 @@ class ShortElementRecord(Element):
         """
         string = Utf8String(self.name)
 
-        bytes= (super(ShortElementRecord, self).to_bytes() + 
+        bytes= (super(ShortElementRecord, self).to_bytes() +
                 string.to_bytes())
 
         for attr in self.attributes:
@@ -62,12 +63,14 @@ class ShortElementRecord(Element):
 
     def __str__(self):
         #return '<%s[name=%s]>' % (type(self).__name__, self.name)
-        return '<%s %s>' % (self.name, ' '.join([str(a) for a in self.attributes]))
+        return '<%s %s>' % (self.name, 
+                ' '.join([str(a) for a in self.attributes]))
 
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
         return cls(name)
+
 
 class ElementRecord(ShortElementRecord):
     type = 0x41
@@ -75,7 +78,7 @@ class ElementRecord(ShortElementRecord):
     def __init__(self, prefix, name, *args, **kwargs):
         super(ElementRecord, self).__init__(name)
         self.prefix = prefix
-    
+   
     def to_bytes(self):
         """
         >>> ElementRecord('x', 'Envelope').to_bytes()
@@ -85,15 +88,17 @@ class ElementRecord(ShortElementRecord):
         data = super(ElementRecord, self).to_bytes()
         type = data[0]
         return (type + pref.to_bytes() + data[1:])
-    
+   
     def __str__(self):
-        return '<%s:%s %s>' % (self.prefix, self.name, ' '.join([str(a) for a in self.attributes]))
-    
+        return '<%s:%s %s>' % (self.prefix, self.name, 
+                ' '.join([str(a) for a in self.attributes]))
+   
     @classmethod
     def parse(cls, fp):
         prefix = Utf8String.parse(fp).value
         name = Utf8String.parse(fp).value
         return cls(prefix, name)
+
 
 class ShortDictionaryElementRecord(Element):
     type = 0x42
@@ -107,7 +112,7 @@ class ShortDictionaryElementRecord(Element):
     def __str__(self):
         return '<%s %s>' % (self.name, ' '.join([str(a) for a in
             self.attributes]))
-    
+   
     def to_bytes(self):
         """
         >>> ShortDictionaryElementRecord(2).to_bytes()
@@ -115,7 +120,7 @@ class ShortDictionaryElementRecord(Element):
         """
         string = MultiByteInt31(self.index)
 
-        bytes= (super(ShortDictionaryElementRecord, self).to_bytes() + 
+        bytes= (super(ShortDictionaryElementRecord, self).to_bytes() +
                 string.to_bytes())
 
         for attr in self.attributes:
@@ -126,6 +131,7 @@ class ShortDictionaryElementRecord(Element):
     def parse(cls, fp):
         index = MultiByteInt31.parse(fp).value
         return cls(index)
+
 
 class DictionaryElementRecord(Element):
     type = 0x43
@@ -142,8 +148,9 @@ class DictionaryElementRecord(Element):
         >>> str(DictionaryElementRecord('x', 2))
         '<x:Envelope >'
         """
-        return '<%s:%s %s>' % (self.prefix, self.name, ' '.join([str(a) for a in self.attributes]))
-    
+        return '<%s:%s %s>' % (self.prefix, self.name, 
+                ' '.join([str(a) for a in self.attributes]))
+   
     def to_bytes(self):
         """
         >>> DictionaryElementRecord('x', 2).to_bytes()
@@ -152,7 +159,7 @@ class DictionaryElementRecord(Element):
         pref = Utf8String(self.prefix)
         string = MultiByteInt31(self.index)
 
-        bytes= (super(DictionaryElementRecord, self).to_bytes() +
+        bytes = (super(DictionaryElementRecord, self).to_bytes() +
                 pref.to_bytes() +
                 string.to_bytes())
 
@@ -166,6 +173,7 @@ class DictionaryElementRecord(Element):
         index = MultiByteInt31.parse(fp).value
         return cls(prefix, index)
 
+
 class PrefixElementRecord(ElementRecord):
     def __init__(self, name):
         super(PrefixElementRecord, self).__init__(self.char, name)
@@ -173,7 +181,7 @@ class PrefixElementRecord(ElementRecord):
     def to_bytes(self):
         string = Utf8String(self.name)
 
-        bytes= (struct.pack('<B', self.type) + 
+        bytes = (struct.pack('<B', self.type) +
                 string.to_bytes())
 
         for attr in self.attributes:
@@ -185,6 +193,7 @@ class PrefixElementRecord(ElementRecord):
         name = Utf8String.parse(fp).value
         return cls(name)
 
+
 class PrefixDictionaryElementRecord(DictionaryElementRecord):
     def __init__(self, index):
         super(PrefixDictionaryElementRecord, self).__init__(self.char, index)
@@ -192,7 +201,7 @@ class PrefixDictionaryElementRecord(DictionaryElementRecord):
     def to_bytes(self):
         string = MultiByteInt31(self.index)
 
-        bytes= (struct.pack('<B', self.type) +
+        bytes = (struct.pack('<B', self.type) +
                 string.to_bytes())
 
         for attr in self.attributes:
@@ -205,7 +214,6 @@ class PrefixDictionaryElementRecord(DictionaryElementRecord):
         return cls(index)
 
 
-
 Record.add_records((
         ShortElementRecord,
         ElementRecord,
@@ -216,26 +224,26 @@ Record.add_records((
 __records__ = []
 
 for c in range(0x44, 0x5D + 1):
-    char = chr(c-0x44 + ord('a'))
+    char = chr(c - 0x44 + ord('a'))
     cls = type(
            'PrefixDictionaryElement' + char.upper() + 'Record',
            (PrefixDictionaryElementRecord,),
            dict(
-                type = c,
-                char = char,
-            ) 
+                type=c,
+                char=char,
+            )
            )
     __records__.append(cls)
 
 for c in range(0x5E, 0x77 + 1):
-    char = chr(c-0x5E + ord('a'))
+    char = chr(c - 0x5E + ord('a'))
     cls = type(
            'PrefixElement' + char.upper() + 'Record',
            (PrefixElementRecord,),
            dict(
-                type = c,
-                char = char,
-            ) 
+                type=c,
+                char=char,
+            )
            )
     __records__.append(cls)
 

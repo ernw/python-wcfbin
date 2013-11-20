@@ -36,11 +36,17 @@ from wcf.datatypes import *
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class Record(object):
     records = dict()
 
     @classmethod
     def add_records(cls, records):
+        """adds records to the lookup table
+
+        :param records: list of Record subclasses
+        :type records: list(Record)
+        """
         for r in records:
             Record.records[r.type] = r
 
@@ -50,14 +56,42 @@ class Record(object):
 
     def to_bytes(self):
         """
+        Generates the representing bytes of the record
+
+        >>> from wcf.records import *
         >>> Record(0xff).to_bytes()
         '\\xff'
+        >>> ElementRecord('a', 'test').to_bytes()
+        'A\\x01a\\x04test'
         """
         return struct.pack('<B', self.type)
 
+    def __repr__(self):
+        args = ['type=0x%X' % self.type]
+        return '<%s(%s)>' % (type(self).__name__, ','.join(args))
 
     @classmethod
     def parse(cls, fp):
+        """
+        Parses the binary data from fp into Record objects
+
+        :param fp: file like object to read from
+        :returns: a root Record object with its child Records
+        :rtype: Record
+
+        >>> from wcf.records import *
+        >>> from StringIO import StringIO as io
+        >>> buf = io('A\\x01a\\x04test\\x01')
+        >>> r = Record.parse(buf)
+        >>> r
+        [<ElementRecord(type=0x41)>]
+        >>> str(r[0])
+        '<a:test >'
+        >>> dump_records(r)
+        'A\\x01a\\x04test\\x01'
+        >>> _ = print_records(r)
+        <a:test ></a:test>
+        """
         if cls != Record:
             return cls()
         root = []
@@ -100,17 +134,22 @@ class Record(object):
 
         return root
 
+
 class Element(Record):
     pass
+
 
 class Attribute(Record):
     pass
 
+
 class Text(Record):
     pass
 
+
 class EndElementRecord(Element):
     type = 0x01
+
 
 class CommentRecord(Record):
     type = 0x02
@@ -139,6 +178,7 @@ class CommentRecord(Record):
     def parse(cls, fp):
         data = Utf8String.parse(fp).value
         return cls(data)
+
 
 class ArrayRecord(Record):
     type = 0x03
