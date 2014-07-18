@@ -516,4 +516,4 @@ dictionary = {
 0x3CC : 'detail',
 }
 
-inverted_dict = dict([(v, k) for (k, v) in dictionary.iteritems()])
+inverted_dict = dict([(v, k) for (k, v) in dictionary.items()])

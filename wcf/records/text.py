@@ -33,7 +33,12 @@ import base64
 import datetime
 import logging
 import uuid
-from htmlentitydefs import codepoint2name
+import sys
+
+try:
+    from htmlentitydefs import codepoint2name
+except ImportError:
+    from html.entities import codepoint2name
 
 
 def escapecp(cp):
@@ -188,10 +193,16 @@ class UnicodeChars8TextRecord(Text):
     type = 0xB6
 
     def __init__(self, string):
-        if isinstance(string, unicode):
-            self.value = string
+        if sys.version_info >= (3, 0, 0):
+            if isinstance(string, str):
+                self.value = string
+            else:
+                self.value = str(string)
         else:
-            self.value = unicode(string)
+            if isinstance(string, unicode):
+                self.value = string
+            else:
+                self.value = unicode(string)
 
     def to_bytes(self):
         """
@@ -423,10 +434,16 @@ class Chars8TextRecord(Text):
     type = 0x98
 
     def __init__(self, value):
-        if isinstance(value, unicode):
-            self.value = value
+        if sys.version_info >= (3, 0, 0):
+            if isinstance(value, str):
+                self.value = value
+            else:
+                self.value = str(value)
         else:
-            self.value = unicode(value)
+            if isinstance(value, unicode):
+                self.value = value
+            else:
+                self.value = unicode(value)
 
     def __str__(self):
         return escape(self.value)

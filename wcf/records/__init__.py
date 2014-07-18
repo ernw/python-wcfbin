@@ -26,7 +26,7 @@
 #  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import sys
 import logging
 
@@ -81,7 +81,7 @@ def repr_records(records, skip=0):
         return
 
     for r in records:
-        print ' '*skip + str(r)
+        print(' '*skip + str(r))
         if hasattr(r, 'childs'):
             repr_records(r.childs, skip+1)
 
@@ -92,9 +92,9 @@ def dump_records(records):
     :param records: the record tree
     :type records: wcf.records.Record
     :returns: a bytestring
-    :rtype: str
+    :rtype: str|bytes
     """
-    out = ''
+    out = b''
 
     for r in records:
         msg = 'Write %s' % type(r).__name__

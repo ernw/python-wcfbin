@@ -115,7 +115,7 @@ class Utf8String(object):
         >>> Utf8String("\\xc3\\xbcber".decode('utf-8')).to_bytes()
         '\\x05\\xc3\\xbcber'
         """
-	data   = self.value.encode('utf-8')
+        data   = self.value.encode('utf-8')
         strlen = len(data)
 
         return MultiByteInt31(strlen).to_bytes() + data
@@ -124,19 +124,19 @@ class Utf8String(object):
         return self.value.decode('latin1')
 
     def __unicode__(self):
-	return self.value
+        return self.value
 
     @classmethod
     def parse(cls, fp):
-	"""
-	>>> from StringIO import StringIO as io
-	>>> fp = io("\\x05\\xc3\\xbcber")
-	>>> s = Utf8String.parse(fp)
-	>>> s.to_bytes()
+        """
+        >>> from StringIO import StringIO as io
+        >>> fp = io("\\x05\\xc3\\xbcber")
+        >>> s = Utf8String.parse(fp)
+        >>> s.to_bytes()
         '\\x05\\xc3\\xbcber'
-	>>> print str(s)
-	'über'
-	"""
+        >>> print str(s)
+        'über'
+        """
         lngth = struct.unpack('<B', fp.read(1))[0]
         
         return cls(fp.read(lngth).decode('utf-8'))

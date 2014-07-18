@@ -29,8 +29,12 @@
 
 if __name__ == '__main__':
     import sys
-    from wcf.records import Record,print_records
-    fp = sys.stdin
+    from wcf.records import Record, print_records
+
+    if sys.version_info >= (3, 0, ):
+        fp = sys.stdin.buffer
+    else:
+        fp = sys.stdin
     if len(sys.argv) > 1:
         filename = sys.argv[1]
         fp = open(filename, 'rb')

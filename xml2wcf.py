@@ -19,4 +19,9 @@ if __name__ == '__main__':
 
     with fp:
         r = XMLParser.parse(fp)
-        sys.stdout.write(dump_records(r))
+        data = dump_records(r)
+
+    if sys.version_info >= (3, 0, 0):
+        sys.stdout.buffer.write(data)
+    else:
+        sys.stdout.write(data)
