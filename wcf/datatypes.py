@@ -194,7 +194,7 @@ class Decimal(object):
         high  = struct.unpack('<I', fp.read(4))[0]
         low   = struct.unpack('<Q', fp.read(8))[0]
 
-        return cls(sign, scale, high, low)
+        return cls(sign, high, low, scale)
         
 
 if __name__ == '__main__':
