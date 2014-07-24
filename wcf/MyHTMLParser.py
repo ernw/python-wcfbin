@@ -10,8 +10,11 @@
 # data -- only char and entity references and end tags are special)
 # and CDATA (character data -- only end tags are special).
 
+try:
+    import markupbase
+except ImportError:
+    import _markupbase as markupbase
 
-import markupbase
 import re
 
 # Regular expressions used for parsing

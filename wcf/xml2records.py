@@ -4,7 +4,11 @@
 from __future__ import absolute_import
 
 from wcf.MyHTMLParser import HTMLParser
-from htmlentitydefs import name2codepoint
+try:
+    from htmlentitydefs import name2codepoint
+except ImportError:
+    from html.entities import name2codepoint
+
 import re
 import base64
 import logging
@@ -262,7 +266,11 @@ class XMLParser(HTMLParser):
         self.last_record.childs.append(CommentRecord(comment))
 
     def parse_marked_section(self, i, report=1):
-        from markupbase import _markedsectionclose, _msmarkedsectionclose
+        try:
+            from markupbase import _markedsectionclose, _msmarkedsectionclose
+        except ImportError:
+            from _markupbase import _markedsectionclose, _msmarkedsectionclose
+
         rawdata= self.rawdata
         assert rawdata[i:i+3] == '<![', "unexpected call to parse_marked_section()"
         sectName, j = self._scan_name( i+3, i )
