@@ -29,6 +29,7 @@
 
 import struct
 import logging
+import sys
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +106,12 @@ class Utf8String(object):
 
     def __init__(self, *args):
         self.value = args[0] if len(args) else None
+        if sys.version_info >= (3,0,0):
+            if not isinstance(self.value, str):
+                self.value = self.value.decode('utf-8')
+        else:
+            if not isinstance(self.value, unicode):
+                self.value = self.value.decode('utf-8')
 
     def to_bytes(self):
         """
@@ -121,7 +128,7 @@ class Utf8String(object):
         return MultiByteInt31(strlen).to_bytes() + data
 
     def __str__(self):
-        return self.value.decode('latin1')
+        return self.value.encode('utf-8')
 
     def __unicode__(self):
         return self.value
@@ -135,7 +142,7 @@ class Utf8String(object):
         >>> s.to_bytes()
         '\\x05\\xc3\\xbcber'
         >>> print str(s)
-        'über'
+        über
         """
         lngth = struct.unpack('<B', fp.read(1))[0]
         
@@ -187,6 +194,12 @@ class Decimal(object):
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from StringIO import StringIO as io
+        >>> buf = io('\\x00\\x00\\x06\\x00\\x00\\x00\\x00\\x00\\x80-N\\x00\\x00\\x00\\x00\\x00')
+        >>> str(Decimal.parse(buf))
+        '5.123456'
+        """
         log.warn('Possible false interpretation')
         fp.read(2)
         scale = struct.unpack('<B', fp.read(1))[0]
