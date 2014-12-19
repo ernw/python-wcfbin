@@ -415,17 +415,32 @@ class DatetimeTextRecord(Text):
         return dt.isoformat()
 
     def to_bytes(self):
-        bytes  = super(DateTimeTextRecord, self).to_bytes()
+        """
+        >>> ''.join('%02X' % ord(i) for i in DatetimeTextRecord(632834208000000000, 0).to_bytes())
+        '9600408EF95B47C808'
+        >>> ''.join('%02X' % ord(i) for i in DatetimeTextRecord(632834208000000000, 2).to_bytes())
+        '9600408EF95B47C888'
+        """
+        bytes  = super(DatetimeTextRecord, self).to_bytes()
         bytes += struct.pack('<Q',
-                (self.tz & 3) | (self.value & 0x1FFFFFFFFFFFFFFF) << 2)
+                ((self.tz & 3) << 62) | (self.value & 0x3FFFFFFFFFFFFFFF))
 
         return bytes
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> import StringIO
+        >>> fp = StringIO.StringIO('\\xFF\\x3F\\x37\\xF4\\x75\\x28\\xCA\\x2B')
+        >>> str(DatetimeTextRecord.parse(fp))
+        '9999-12-31T23:59:59.999999'
+        >>> fp = StringIO.StringIO('\\x00\\x40\\x8E\\xF9\\x5B\\x47\\xC8\\x08')
+        >>> str(DatetimeTextRecord.parse(fp))
+        '2006-05-17T00:00:00'
+        """
         data = struct.unpack('<Q', fp.read(8))[0]
-        tz = data & 3
-        value = data >> 2
+        tz = data >> 62
+        value = data & 0x3FFFFFFFFFFFFFFF
 
         return DatetimeTextRecord(value, tz)
 
