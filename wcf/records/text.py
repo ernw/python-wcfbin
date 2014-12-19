@@ -423,7 +423,7 @@ class DatetimeTextRecord(Text):
         """
         bytes  = super(DatetimeTextRecord, self).to_bytes()
         bytes += struct.pack('<Q',
-                (self.tz & 3) | (self.value & 0x1FFFFFFFFFFFFFFF) << 2)
+                ((self.tz & 3) << 62) | (self.value & 0x3FFFFFFFFFFFFFFF))
 
         return bytes
 
@@ -439,8 +439,8 @@ class DatetimeTextRecord(Text):
         '2006-05-17T00:00:00'
         """
         data = struct.unpack('<Q', fp.read(8))[0]
-        tz = data & 3
-        value = data >> 2
+        tz = data >> 62
+        value = data & 0x3FFFFFFFFFFFFFFF
 
         return DatetimeTextRecord(value, tz)
 
