@@ -415,7 +415,7 @@ class DatetimeTextRecord(Text):
         return dt.isoformat()
 
     def to_bytes(self):
-        bytes  = super(DateTimeTextRecord, self).to_bytes()
+        bytes  = super(DatetimeTextRecord, self).to_bytes()
         bytes += struct.pack('<Q',
                 (self.tz & 3) | (self.value & 0x1FFFFFFFFFFFFFFF) << 2)
 
