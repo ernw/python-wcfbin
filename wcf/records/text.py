@@ -419,7 +419,7 @@ class DatetimeTextRecord(Text):
         >>> ''.join('%02X' % ord(i) for i in DatetimeTextRecord(632834208000000000, 0).to_bytes())
         '9600408EF95B47C808'
         >>> ''.join('%02X' % ord(i) for i in DatetimeTextRecord(632834208000000000, 2).to_bytes())
-        '9600408EF95B47C888't
+        '9600408EF95B47C888'
         """
         bytes  = super(DatetimeTextRecord, self).to_bytes()
         bytes += struct.pack('<Q',
