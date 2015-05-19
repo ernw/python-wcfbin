@@ -48,7 +48,7 @@ class XMLParser(HTMLParser):
     def _parse_tag(self, tag):
         if ':' in tag:
             prefix = tag[:tag.find(':')]
-            name   = tag[tag.find(':')+1:]
+            name = tag[tag.find(':')+1:]
 
             if len(prefix) == 1:
                 cls_name = 'Element' + prefix.upper() + 'Record'
@@ -86,7 +86,7 @@ class XMLParser(HTMLParser):
         self.last_record.childs.append(textrecord)
         #if end:
         #    textrecord.type += 1
- 
+
     def _parse_data(self, data):
         data = data.strip()
         b64 = False
@@ -160,24 +160,24 @@ class XMLParser(HTMLParser):
 
             base_diff = 62135596800.0
             dt = int((time.mktime(dt.timetuple()) - base) * 10 + ms)
-           
+
             return DateTimeTextRecord(dt, tz)
-        
+
         # text as fallback
         val = len(data)
         if val < 2**8:
-            return Chars8TextRecord(data)
+            return UnicodeChars8TextRecord(data)
         elif val < 2**16:
-            return Chars16TextRecord(data)
+            return UnicodeChars16TextRecord(data)
         elif val < 2**32:
-            return Chars32TextRecord(data)
+            return UnicodeChars32TextRecord(data)
 
     def _parse_attr(self, name, value):
 
         if ':' in name:
             prefix = name[:name.find(':')]
             name   = name[name.find(':')+1:]
-           
+
             if prefix == 'xmlns':
                 if value in inverted_dict:
                     return DictionaryXmlnsAttributeRecord(name,
@@ -215,25 +215,25 @@ class XMLParser(HTMLParser):
         if self.data:
             self._store_data(self.data, False)
             self.data = None
-       
+
         el = self._parse_tag(tag)
         for n, v in attrs:
             el.attributes.append(self._parse_attr(n, v))
         self.last_record.childs.append(el)
         el.parent = self.last_record
         self.last_record = el
-   
+
     def handle_startendtag(self, tag, attrs):
         if self.data:
             self._store_data(self.data, False)
             self.data = None
-       
+
         el = self._parse_tag(tag)
         for n, v in attrs:
             el.attributes.append(self._parse_attr(n, v))
         self.last_record.childs.append(el)
         #self.last_record.childs.append(EndElementRecord())
-   
+
     def handle_endtag(self, tag):
         if self.data:
             self._store_data(self.data, True)
@@ -324,14 +324,14 @@ class XMLParser(HTMLParser):
         else:
             raise ValueError("%s has an incompatible type %s" % (data,
                 type(data)))
-        
+
         p.feed(xml)
 
         return p.records
 
 if __name__ == '__main__':
     import sys
-   
+
     fp = sys.stdin
 
     if len(sys.argv) > 1:

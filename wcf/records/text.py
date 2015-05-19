@@ -35,7 +35,6 @@ import base64
 import datetime
 import logging
 import uuid
-import sys
 
 try:
     from htmlentitydefs import codepoint2name
@@ -195,16 +194,10 @@ class UnicodeChars8TextRecord(Text):
     type = 0xB6
 
     def __init__(self, string):
-        if sys.version_info >= (3, 0, 0):
-            if isinstance(string, str):
-                self.value = string
-            else:
-                self.value = str(string)
+        if isinstance(string, str):
+            self.value = string
         else:
-            if isinstance(string, unicode):
-                self.value = string
-            else:
-                self.value = unicode(string)
+            self.value = str(string)
 
     def to_bytes(self):
         """
@@ -458,16 +451,10 @@ class Chars8TextRecord(Text):
     type = 0x98
 
     def __init__(self, value):
-        if sys.version_info >= (3, 0, 0):
-            if isinstance(value, str):
-                self.value = value
-            else:
-                self.value = str(value)
+        if isinstance(value, str):
+            self.value = value
         else:
-            if isinstance(value, unicode):
-                self.value = value
-            else:
-                self.value = unicode(value)
+            self.value = str(value)
 
     def __str__(self):
         return escape(self.value)

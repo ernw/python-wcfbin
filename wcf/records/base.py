@@ -199,49 +199,73 @@ class ArrayRecord(Record):
         0xB1: ('UuidTextWithEndElement', 16, ''),
     }
 
-    def __init__(self, element, recordtype, data):
+    def __init__(self, element, data, attributes):
         self.element = element
-        self.recordtype = recordtype
         self.count = len(data)
         self.data = data
+        recordtype = None
+        for data in self.data:
+            if recordtype is None:
+                recordtype = data.type + 1
+            else:
+                assert recordtype == data.type + 1
+        self.recordtype = recordtype
+        self.attributes = []
 
     def to_bytes(self):
         """
+        >>> from wcf.records.text import Int32TextRecord
         >>> from wcf.records.elements import ShortElementRecord
-        >>> ArrayRecord(ShortElementRecord('item'), 0x8D, ['\\x01\\x00\\x00\\x00', '\\x02\\x00\\x00\\x00', '\\x03\\x00\\x00\\x00']).to_bytes()
+        >>> ArrayRecord(ShortElementRecord('item'), [Int32TextRecord(1), Int32TextRecord(2), Int32TextRecord(3)], []).to_bytes()
         b'\\x03@\\x04item\\x01\\x8d\\x03\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'
         """
         bt = super(ArrayRecord, self).to_bytes()
         bt += self.element.to_bytes()
+        for attrib in self.attributes:
+            bt += attrib.to_bytes()
         bt += EndElementRecord().to_bytes()
         bt += bytes(struct.pack(b'<B', self.recordtype))
         bt += MultiByteInt31(self.count).to_bytes()
         for data in self.data:
-            if isinstance(data, bytes):
-                bt += data
-            elif hasattr(data, 'to_bytes'):
-                bt += data.to_bytes()
-            else:
-                bt += data.encode('latin1')
-
+            bt += data.to_bytes()[1:]
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from wcf.records import *
+        >>> from io import BytesIO
+        >>> buf = BytesIO(b'@\\x04item\\x01\\x8d\\x03\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00')
+        >>> r = ArrayRecord.parse(buf)
+        >>> r
+        <ArrayRecord(type=0x3)>
+        >>> r.to_bytes()
+        b'\\x03@\\x04item\\x01\\x8d\\x03\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'
+        """
         element = struct.unpack(b'<B', fp.read(1))[0]
-        element = __records__[element].parse(fp)
+        element = Record.records[element].parse(fp)
+        attributes = []
+        while True:
+            type = struct.unpack(b'<B', fp.read(1))[0]
+            obj = Record.records[type].parse(fp)
+            if isinstance(obj, EndElementRecord):
+                break
+            elif isinstance(obj, Attribute):
+                attributes.append(obj)
+            else:
+                raise ValueError('unknown type: %s' % hex(type))
         recordtype = struct.unpack(b'<B', fp.read(1))[0]
         count = MultiByteInt31.parse(fp).value
         data = []
         for i in range(count):
-            data.append(__records__[recordtype-1].parse(fp))
-        return cls(element, recordtype, data)
+            data.append(Record.records[recordtype-1].parse(fp))
+        return cls(element, data, attributes)
 
     def __str__(self):
         """
         >>> from wcf.records.elements import ShortElementRecord
         >>> from wcf.records.text import Int32TextRecord
-        >>> str(ArrayRecord(ShortElementRecord('item'), 0x8D, [Int32TextRecord(1),Int32TextRecord(2),Int32TextRecord(3)]))
+        >>> str(ArrayRecord(ShortElementRecord('item'), [Int32TextRecord(1), Int32TextRecord(2), Int32TextRecord(3)], []))
         '<item>1</item><item>2</item><item>3</item>'
         """
         string = ''
