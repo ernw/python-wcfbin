@@ -27,6 +27,14 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import
+from __future__ import unicode_literals
+
+try:
+    import __builtin__  # noqa
+    is_py2 = True
+except ImportError:
+    is_py2 = False
+from builtins import str, chr, bytes
 
 import struct
 import logging
@@ -50,13 +58,13 @@ class ShortAttributeRecord(Attribute):
     def to_bytes(self):
         """
         >>> ShortAttributeRecord('test', TrueTextRecord()).to_bytes()
-        '\\x04\\x04test\\x86'
+        b'\\x04\\x04test\\x86'
         """
-        bytes = super(ShortAttributeRecord, self).to_bytes()
-        bytes += Utf8String(self.name).to_bytes()
-        bytes += self.value.to_bytes()
+        bt = super(ShortAttributeRecord, self).to_bytes()
+        bt += Utf8String(self.name).to_bytes()
+        bt += self.value.to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     def __str__(self):
         return '%s="%s"' % (self.name, str(self.value))
@@ -64,8 +72,8 @@ class ShortAttributeRecord(Attribute):
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
-        value= Record.records[type].parse(fp)
+        type = struct.unpack(b'<B', fp.read(1))[0]
+        value = Record.records[type].parse(fp)
 
         return cls(name, value)
 
@@ -81,14 +89,14 @@ class AttributeRecord(Attribute):
     def to_bytes(self):
         """
         >>> AttributeRecord('x', 'test', TrueTextRecord()).to_bytes()
-        '\\x05\\x01x\\x04test\\x86'
+        b'\\x05\\x01x\\x04test\\x86'
         """
-        bytes = super(AttributeRecord, self).to_bytes()
-        bytes += Utf8String(self.prefix).to_bytes()
-        bytes += Utf8String(self.name).to_bytes()
-        bytes += self.value.to_bytes()
+        bt = super(AttributeRecord, self).to_bytes()
+        bt += Utf8String(self.prefix).to_bytes()
+        bt += Utf8String(self.name).to_bytes()
+        bt += self.value.to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     def __str__(self):
         return '%s:%s="%s"' % (self.prefix, self.name, str(self.value))
@@ -97,7 +105,7 @@ class AttributeRecord(Attribute):
     def parse(cls, fp):
         prefix = Utf8String.parse(fp).value
         name = Utf8String.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
+        type = struct.unpack(b'<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
 
         return cls(prefix, name, value)
@@ -113,13 +121,13 @@ class ShortDictionaryAttributeRecord(Attribute):
     def to_bytes(self):
         """
         >>> ShortDictionaryAttributeRecord(3, TrueTextRecord()).to_bytes()
-        '\\x06\\x03\\x86'
+        b'\\x06\\x03\\x86'
         """
-        bytes = super(ShortDictionaryAttributeRecord, self).to_bytes()
-        bytes += MultiByteInt31(self.index).to_bytes()
-        bytes += self.value.to_bytes()
+        bt = super(ShortDictionaryAttributeRecord, self).to_bytes()
+        bt += MultiByteInt31(self.index).to_bytes()
+        bt += self.value.to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     def __str__(self):
         return '%s="%s"' % (dictionary[self.index], str(self.value))
@@ -127,7 +135,7 @@ class ShortDictionaryAttributeRecord(Attribute):
     @classmethod
     def parse(cls, fp):
         index = MultiByteInt31.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
+        type = struct.unpack(b'<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
 
         return cls(index, value)
@@ -144,14 +152,14 @@ class DictionaryAttributeRecord(Attribute):
     def to_bytes(self):
         """
         >>> DictionaryAttributeRecord('x', 2, TrueTextRecord()).to_bytes()
-        '\\x07\\x01x\\x02\\x86'
+        b'\\x07\\x01x\\x02\\x86'
         """
-        bytes = super(DictionaryAttributeRecord, self).to_bytes()
-        bytes += Utf8String(self.prefix).to_bytes()
-        bytes += MultiByteInt31(self.index).to_bytes()
-        bytes += self.value.to_bytes()
+        bt = super(DictionaryAttributeRecord, self).to_bytes()
+        bt += Utf8String(self.prefix).to_bytes()
+        bt += MultiByteInt31(self.index).to_bytes()
+        bt += self.value.to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     def __str__(self):
         return '%s:%s="%s"' % (self.prefix, dictionary[self.index], 
@@ -161,7 +169,7 @@ class DictionaryAttributeRecord(Attribute):
     def parse(cls, fp):
         prefix = Utf8String.parse(fp).value
         index = MultiByteInt31.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
+        type = struct.unpack(b'<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
 
         return cls(prefix, index, value)
@@ -178,13 +186,13 @@ class ShortDictionaryXmlnsAttributeRecord(Attribute):
 
     def to_bytes(self):
         """
-        >>> ShortDictionaryXmlnsAttributeRecord( 6).to_bytes()
-        '\\n\\x06'
+        >>> ShortDictionaryXmlnsAttributeRecord(6).to_bytes()
+        b'\\n\\x06'
         """
-        bytes = struct.pack('<B', self.type)
-        bytes += MultiByteInt31(self.index).to_bytes()
+        bt = struct.pack(b'<B', self.type)
+        bt += MultiByteInt31(self.index).to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
@@ -205,13 +213,13 @@ class DictionaryXmlnsAttributeRecord(Attribute):
     def to_bytes(self):
         """
         >>> DictionaryXmlnsAttributeRecord('a', 6).to_bytes()
-        '\\x0b\\x01\x61\\x06'
+        b'\\x0b\\x01\x61\\x06'
         """
-        bytes = struct.pack('<B', self.type)
-        bytes += Utf8String(self.prefix).to_bytes()
-        bytes += MultiByteInt31(self.index).to_bytes()
+        bt = struct.pack(b'<B', self.type)
+        bt += Utf8String(self.prefix).to_bytes()
+        bt += MultiByteInt31(self.index).to_bytes()
 
-        return bytes
+        return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
@@ -228,9 +236,9 @@ class ShortXmlnsAttributeRecord(Attribute):
         self.value = value
 
     def to_bytes(self):
-        bytes = struct.pack('<B', self.type)
-        bytes += Utf8String(self.value).to_bytes()
-        return bytes
+        bt = struct.pack(b'<B', self.type)
+        bt += Utf8String(self.value).to_bytes()
+        return bytes(bt)
 
     def __str__(self):
         return 'xmlns="%s"' % (self.value,)
@@ -250,10 +258,10 @@ class XmlnsAttributeRecord(Attribute):
         self.value = value
 
     def to_bytes(self):
-        bytes = struct.pack('<B', self.type)
-        bytes += Utf8String(self.name).to_bytes()
-        bytes += Utf8String(self.value).to_bytes()
-        return bytes
+        bt = struct.pack(b'<B', self.type)
+        bt += Utf8String(self.name).to_bytes()
+        bt += Utf8String(self.value).to_bytes()
+        return bytes(bt)
 
     def __str__(self):
         return 'xmlns:%s="%s"' % (self.name, self.value)
@@ -271,32 +279,32 @@ class PrefixAttributeRecord(AttributeRecord):
 
     def to_bytes(self):
         string = Utf8String(self.name)
-        return (struct.pack('<B', self.type) + string.to_bytes() +
-                self.value.to_bytes())
+        return bytes(struct.pack(b'<B', self.type) + string.to_bytes() +
+                     self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
         name = Utf8String.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
+        type = struct.unpack(b'<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
         return cls(name, value)
 
 
 class PrefixDictionaryAttributeRecord(DictionaryAttributeRecord):
     def __init__(self, index, value):
-        super(PrefixDictionaryAttributeRecord, self).__init__(self.char, 
-                index, value)
+        super(PrefixDictionaryAttributeRecord, self).__init__(self.char,
+                                                              index, value)
 
     def to_bytes(self):
         idx = MultiByteInt31(self.index)
-        return (struct.pack('<B', self.type) + idx.to_bytes() +
-                self.value.to_bytes())
+        return bytes(struct.pack(b'<B', self.type) + idx.to_bytes() +
+                     self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
-        index= MultiByteInt31.parse(fp).value
-        type = struct.unpack('<B', fp.read(1))[0]
-        value= Record.records[type].parse(fp)
+        index = MultiByteInt31.parse(fp).value
+        type = struct.unpack(b'<B', fp.read(1))[0]
+        value = Record.records[type].parse(fp)
         return cls(index, value)
 
 
@@ -316,8 +324,11 @@ __records__ = []
 
 for c in range(0x0C, 0x25 + 1):
     char = chr(c - 0x0C + ord('a'))
+    clsname = 'PrefixDictionaryAttribute' + char.upper() + 'Record'
+    if is_py2:
+        clsname = clsname.encode('latin1')
     cls = type(
-           'PrefixDictionaryAttribute' + char.upper() + 'Record',
+           clsname,
            (PrefixDictionaryAttributeRecord,),
            dict(
                 type=c,
@@ -328,8 +339,11 @@ for c in range(0x0C, 0x25 + 1):
 
 for c in range(0x26, 0x3F + 1):
     char = chr(c - 0x26 + ord('a'))
+    clsname = 'PrefixAttribute' + char.upper() + 'Record'
+    if is_py2:
+        clsname = clsname.encode('latin1')
     cls = type(
-           'PrefixAttribute' + char.upper() + 'Record',
+           clsname,
            (PrefixAttributeRecord,),
            dict(
                 type=c,

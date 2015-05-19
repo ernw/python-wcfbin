@@ -9,6 +9,9 @@
 # character data -- the normal case), RCDATA (replaceable character
 # data -- only char and entity references and end tags are special)
 # and CDATA (character data -- only end tags are special).
+from __future__ import unicode_literals
+
+from builtins import chr
 
 try:
     import markupbase
@@ -380,7 +383,7 @@ class HTMLParser(markupbase.ParserBase):
                         c = int(s[1:], 16)
                     else:
                         c = int(s)
-                    return unichr(c)
+                    return chr(c)
             except ValueError:
                 return '&#'+s+';'
             else:
@@ -390,7 +393,7 @@ class HTMLParser(markupbase.ParserBase):
                 if HTMLParser.entitydefs is None:
                     entitydefs = HTMLParser.entitydefs = {'apos':u"'"}
                     for k, v in htmlentitydefs.name2codepoint.iteritems():
-                        entitydefs[k] = unichr(v)
+                        entitydefs[k] = chr(v)
                 try:
                     return self.entitydefs[s]
                 except KeyError:

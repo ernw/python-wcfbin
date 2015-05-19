@@ -31,14 +31,14 @@ test_bin = decode(
 "757374074b657953697a658b0001410574727573740e42696e6172794578"
 "6368616e67650674aaa60306d402aad8029e364e544c4d53535000010000"
 "00b7b218e20a000a002d00000005000500280000000601b11d0000000f43"
-"4c5753315745425345525649439f0145010101", "hex")
+"4c5753315745425345525649439f0145010101", "hex_codec")
 
 class TransformTest(unittest.TestCase):
 
     def runTest(self):
-        from StringIO import StringIO
-        sio = StringIO(test_bin)
-        new = dump_records(Record.parse(sio))
+        from io import BytesIO
+        bio = BytesIO(test_bin)
+        new = dump_records(Record.parse(bio))
 
         self.assertEqual(test_bin, new)
 

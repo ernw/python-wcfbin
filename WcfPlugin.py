@@ -1,6 +1,6 @@
 # vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 from __future__ import absolute_import
-from StringIO import StringIO
+from io import BytesIO, StringIO
 import array
 
 from bluec0re import ICallback
@@ -25,7 +25,7 @@ def encode_decode(headers, data):
         if 'Content-Type' not in headers or headers['Content-Type'] != 'application/soap+msbin1':
             return headers, data
         #print headers
-        fp = StringIO(data)
+        fp = BytesIO(data)
         data = Record.parse(fp)
         fp.close()
         fp = StringIO()

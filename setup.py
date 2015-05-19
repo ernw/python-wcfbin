@@ -14,6 +14,7 @@ setup(
     scripts=['wcf2xml.py', 'xml2wcf.py'],
     long_description="",
     test_suite="tests.alltests.Suite",
+    install_requires=["future"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
