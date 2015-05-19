@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name = "wcf-binary parser",
-    version = "0.5.0",
+    version = "0.5.2",
     author = "Timo Schmid",
     author_email = "tschmid@ernw.de",
     description = ("A library for transforming wcf-binary data from and to xml"),
