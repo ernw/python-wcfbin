@@ -399,7 +399,7 @@ def main ():
 
 def encode_decode(headers, data):
     from records import Record, print_records, dump_records
-    from StringIO import StringIO
+    from io import StringIO, BytesIO
 
     if not data:
         return headers, data
@@ -418,7 +418,7 @@ def encode_decode(headers, data):
     else:
         if 'Content-Type' not in headers or headers['Content-Type'] != 'application/soap+msbin1':
             return headers, data
-        fp = StringIO(data)
+        fp = BytesIO(data)
         data = Record.parse(fp)
         fp.close()
         fp = StringIO()

@@ -3,6 +3,8 @@
 
 from __future__ import absolute_import
 
+from builtins import chr
+
 from wcf.MyHTMLParser import HTMLParser
 try:
     from htmlentitydefs import name2codepoint
@@ -307,10 +309,10 @@ class XMLParser(HTMLParser):
         >>> from wcf.xml2records import XMLParser
         >>> r = XMLParser.parse('<s:Envelope><b:Body /></s:Envelope>')
         >>> dump_records(r)
-        'V\\x02E\\x0e\\x01\\x01'
+        b'V\\x02E\\x0e\\x01\\x01'
         >>> b = print_records(r)
-        <s:Envelope >
-         <b:Body ></b:Body>
+        <s:Envelope>
+         <b:Body></b:Body>
         </s:Envelope>
         """
         p = cls()
