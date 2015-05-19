@@ -2,8 +2,8 @@ import os
 from setuptools import setup
 
 setup(
-    name = "wcf-binary parser",
-    version = "0.4.4",
+    name = "wcf-binary parser"
+    version = "0.5.0",
     author = "Timo Schmid",
     author_email = "tschmid@ernw.de",
     description = ("A library for transforming wcf-binary data from and to xml"),
@@ -20,8 +20,8 @@ setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License",
         "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 3",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Software Development :: Libraries :: Python Modules",
-
     ],
 )
