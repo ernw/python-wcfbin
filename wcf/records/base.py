@@ -1,12 +1,12 @@
 # vim: set ts=4 sw=4 tw=79 fileencoding=utf-8:
 #  Copyright (c) 2011, Timo Schmid <tschmid@ernw.de>
 #  All rights reserved.
-#  
+#
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
 #  are met:
 #
-#  * Redistributions of source code must retain the above copyright 
+#  * Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
 #  * Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
@@ -27,6 +27,9 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import
+from __future__ import unicode_literals
+
+from builtins import str, bytes
 
 import struct
 import logging
@@ -60,11 +63,11 @@ class Record(object):
 
         >>> from wcf.records import *
         >>> Record(0xff).to_bytes()
-        '\\xff'
+        b'\\xff'
         >>> ElementRecord('a', 'test').to_bytes()
-        'A\\x01a\\x04test'
+        b'A\\x01a\\x04test'
         """
-        return struct.pack('<B', self.type)
+        return bytes(struct.pack(b'<B', self.type))
 
     def __repr__(self):
         args = ['type=0x%X' % self.type]
@@ -80,15 +83,15 @@ class Record(object):
         :rtype: Record
 
         >>> from wcf.records import *
-        >>> from StringIO import StringIO as io
-        >>> buf = io('A\\x01a\\x04test\\x01')
+        >>> from io import BytesIO
+        >>> buf = BytesIO(b'A\\x01a\\x04test\\x01')
         >>> r = Record.parse(buf)
         >>> r
         [<ElementRecord(type=0x41)>]
         >>> str(r[0])
         '<a:test >'
         >>> dump_records(r)
-        'A\\x01a\\x04test\\x01'
+        b'A\\x01a\\x04test\\x01'
         >>> _ = print_records(r)
         <a:test ></a:test>
         """
@@ -102,7 +105,7 @@ class Record(object):
         while type:
             type = fp.read(1)
             if type:
-                type = struct.unpack('<B', type)[0]
+                type = struct.unpack(b'<B', type)[0]
                 if type in Record.records:
                     log.debug('%s found' % Record.records[type].__name__)
                     obj = Record.records[type].parse(fp)
@@ -153,19 +156,19 @@ class EndElementRecord(Element):
 
 class CommentRecord(Record):
     type = 0x02
-    
+
     def __init__(self, comment, *args, **kwargs):
         self.comment = comment
 
     def to_bytes(self):
         """
         >>> CommentRecord('test').to_bytes()
-        '\\x02\\x04test'
+        b'\\x02\\x04test'
         """
         string = Utf8String(self.comment)
 
-        return (super(CommentRecord, self).to_bytes() + 
-                string.to_bytes())
+        return bytes(super(CommentRecord, self).to_bytes() +
+                     string.to_bytes())
 
     def __str__(self):
         """
@@ -184,17 +187,17 @@ class ArrayRecord(Record):
     type = 0x03
 
     datatypes = {
-            0xB5 : ('BoolTextWithEndElement', 1, '?'),
-            0x8B : ('Int16TextWithEndElement', 2, 'h'),
-            0x8D : ('Int32TextWithEndElement', 4, 'i'),
-            0x8F : ('Int64TextWithEndElement', 8, 'q'),
-            0x91 : ('FloatTextWithEndElement', 4, 'f'),
-            0x93 : ('DoubleTextWithEndElement', 8, 'd'),
-            0x95 : ('DecimalTextWithEndElement', 16, ''),
-            0x97 : ('DateTimeTextWithEndElement', 8, ''),
-            0xAF : ('TimeSpanTextWithEndElement', 8, ''),
-            0xB1 : ('UuidTextWithEndElement', 16, ''),
-            }
+        0xB5: ('BoolTextWithEndElement', 1, '?'),
+        0x8B: ('Int16TextWithEndElement', 2, 'h'),
+        0x8D: ('Int32TextWithEndElement', 4, 'i'),
+        0x8F: ('Int64TextWithEndElement', 8, 'q'),
+        0x91: ('FloatTextWithEndElement', 4, 'f'),
+        0x93: ('DoubleTextWithEndElement', 8, 'd'),
+        0x95: ('DecimalTextWithEndElement', 16, ''),
+        0x97: ('DateTimeTextWithEndElement', 8, ''),
+        0xAF: ('TimeSpanTextWithEndElement', 8, ''),
+        0xB1: ('UuidTextWithEndElement', 16, ''),
+    }
 
     def __init__(self, element, recordtype, data):
         self.element = element
@@ -206,26 +209,28 @@ class ArrayRecord(Record):
         """
         >>> from wcf.records.elements import ShortElementRecord
         >>> ArrayRecord(ShortElementRecord('item'), 0x8D, ['\\x01\\x00\\x00\\x00', '\\x02\\x00\\x00\\x00', '\\x03\\x00\\x00\\x00']).to_bytes()
-        '\\x03@\\x04item\\x01\\x8d\\x03\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'
+        b'\\x03@\\x04item\\x01\\x8d\\x03\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'
         """
-        bytes = super(ArrayRecord, self).to_bytes()
-        bytes += self.element.to_bytes()
-        bytes += EndElementRecord().to_bytes()
-        bytes += struct.pack('<B', self.recordtype)[0]
-        bytes += MultiByteInt31(self.count).to_bytes()
+        bt = super(ArrayRecord, self).to_bytes()
+        bt += self.element.to_bytes()
+        bt += EndElementRecord().to_bytes()
+        bt += bytes(struct.pack(b'<B', self.recordtype))
+        bt += MultiByteInt31(self.count).to_bytes()
         for data in self.data:
-            if type(data) == str:
-                bytes += data
+            if isinstance(data, bytes):
+                bt += data
+            elif hasattr(data, 'to_bytes'):
+                bt += data.to_bytes()
             else:
-                bytes += data.to_bytes()
+                bt += data.encode('latin1')
 
-        return bytes
+        return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        element = struct.unpack('<B', fp.read(1))[0]
+        element = struct.unpack(b'<B', fp.read(1))[0]
         element = __records__[element].parse(fp)
-        recordtype = struct.unpack('<B', fp.read(1))[0]
+        recordtype = struct.unpack(b'<B', fp.read(1))[0]
         count = MultiByteInt31.parse(fp).value
         data = []
         for i in range(count):
