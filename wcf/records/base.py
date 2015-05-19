@@ -89,11 +89,11 @@ class Record(object):
         >>> r
         [<ElementRecord(type=0x41)>]
         >>> str(r[0])
-        '<a:test >'
+        '<a:test>'
         >>> dump_records(r)
         b'A\\x01a\\x04test\\x01'
         >>> _ = print_records(r)
-        <a:test ></a:test>
+        <a:test></a:test>
         """
         if cls != Record:
             return cls()
@@ -242,7 +242,7 @@ class ArrayRecord(Record):
         >>> from wcf.records.elements import ShortElementRecord
         >>> from wcf.records.text import Int32TextRecord
         >>> str(ArrayRecord(ShortElementRecord('item'), 0x8D, [Int32TextRecord(1),Int32TextRecord(2),Int32TextRecord(3)]))
-        '<item >1</item><item >2</item><item >3</item>'
+        '<item>1</item><item>2</item><item>3</item>'
         """
         string = ''
         for data in self.data:

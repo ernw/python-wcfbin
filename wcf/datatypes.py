@@ -112,12 +112,8 @@ class Utf8String(object):
 
     def __init__(self, *args):
         self.value = args[0] if len(args) else None
-        if sys.version_info >= (3, 0, 0):
-            if not isinstance(self.value, str):
-                self.value = self.value.decode('utf-8')
-        else:
-            if not isinstance(self.value, unicode):
-                self.value = self.value.decode('utf-8')
+        if isinstance(self.value, bytes):
+            self.value = str(self.value, 'utf-8')
 
     def to_bytes(self):
         """

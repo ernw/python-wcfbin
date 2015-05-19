@@ -311,8 +311,8 @@ class XMLParser(HTMLParser):
         >>> dump_records(r)
         b'V\\x02E\\x0e\\x01\\x01'
         >>> b = print_records(r)
-        <s:Envelope >
-         <b:Body ></b:Body>
+        <s:Envelope>
+         <b:Body></b:Body>
         </s:Envelope>
         """
         p = cls()

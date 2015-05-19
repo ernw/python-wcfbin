@@ -71,8 +71,10 @@ class ShortElementRecord(Element):
 
     def __str__(self):
         # return '<%s[name=%s]>' % (type(self).__name__, self.name)
-        return ('<%s %s>' % (self.name,
-                ' '.join([str(a) for a in self.attributes])))
+        attribs = ' '.join([str(a) for a in self.attributes])
+        if attribs:
+            attribs = ' ' + attribs
+        return '<%s%s>' % (self.name, attribs)
 
     @classmethod
     def parse(cls, fp):
@@ -98,8 +100,10 @@ class ElementRecord(ShortElementRecord):
         return bytes(type + pref.to_bytes() + data[1:])
 
     def __str__(self):
-        return ('<%s:%s %s>' % (self.prefix, self.name,
-                ' '.join([str(a) for a in self.attributes])))
+        attribs = ' '.join([str(a) for a in self.attributes])
+        if attribs:
+            attribs = ' ' + attribs
+        return '<%s:%s%s>' % (self.prefix, self.name, attribs)
 
     @classmethod
     def parse(cls, fp):
@@ -118,8 +122,10 @@ class ShortDictionaryElementRecord(Element):
         self.name = dictionary[self.index]
 
     def __str__(self):
-        return ('<%s %s>' % (self.name, ' '.join([str(a) for a in
-                self.attributes])))
+        attribs = ' '.join([str(a) for a in self.attributes])
+        if attribs:
+            attribs = ' ' + attribs
+        return '<%s%s>' % (self.name, attribs)
 
     def to_bytes(self):
         """
@@ -154,10 +160,12 @@ class DictionaryElementRecord(Element):
     def __str__(self):
         """
         >>> str(DictionaryElementRecord('x', 2))
-        '<x:Envelope >'
+        '<x:Envelope>'
         """
-        return ('<%s:%s %s>' % (self.prefix, self.name,
-                ' '.join([str(a) for a in self.attributes])))
+        attribs = ' '.join([str(a) for a in self.attributes])
+        if attribs:
+            attribs = ' ' + attribs
+        return '<%s:%s%s>' % (self.prefix, self.name, attribs)
 
     def to_bytes(self):
         """
