@@ -36,6 +36,7 @@ except ImportError:
     is_py2 = False
 from builtins import str, chr, bytes
 
+import sys
 import struct
 import logging
 
@@ -78,6 +79,13 @@ class ShortElementRecord(Element):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x08Envelope')
+        >>> ser = ShortElementRecord.parse(fp)
+        >>> str(ser)
+        '<Envelope>'
+        """
         name = Utf8String.parse(fp).value
         return cls(name)
 
@@ -107,6 +115,13 @@ class ElementRecord(ShortElementRecord):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x01x\x08Envelope')
+        >>> er = ElementRecord.parse(fp)
+        >>> str(er)
+        '<x:Envelope>'
+        """
         prefix = Utf8String.parse(fp).value
         name = Utf8String.parse(fp).value
         return cls(prefix, name)
@@ -143,6 +158,13 @@ class ShortDictionaryElementRecord(Element):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x02')
+        >>> sder = ShortDictionaryElementRecord.parse(fp)
+        >>> str(sder)
+        '<Envelope>'
+        """
         index = MultiByteInt31.parse(fp).value
         return cls(index)
 
@@ -185,6 +207,13 @@ class DictionaryElementRecord(Element):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x01x\x02')
+        >>> sder = DictionaryElementRecord.parse(fp)
+        >>> str(sder)
+        '<x:Envelope>'
+        """
         prefix = Utf8String.parse(fp).value
         index = MultiByteInt31.parse(fp).value
         return cls(prefix, index)
@@ -195,6 +224,10 @@ class PrefixElementRecord(ElementRecord):
         super(PrefixElementRecord, self).__init__(self.char, name)
 
     def to_bytes(self):
+        r"""
+        >>> PrefixElementARecord('test').to_bytes()
+        b'^\x04test'
+        """
         string = Utf8String(self.name)
 
         bt = (struct.pack(b'<B', self.type) +
@@ -206,6 +239,13 @@ class PrefixElementRecord(ElementRecord):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04test')
+        >>> pear = PrefixElementARecord.parse(fp)
+        >>> str(pear)
+        '<a:test>'
+        """
         name = Utf8String.parse(fp).value
         return cls(name)
 
@@ -215,6 +255,10 @@ class PrefixDictionaryElementRecord(DictionaryElementRecord):
         super(PrefixDictionaryElementRecord, self).__init__(self.char, index)
 
     def to_bytes(self):
+        r"""
+        >>> PrefixDictionaryElementARecord(2).to_bytes()
+        b'D\x02'
+        """
         string = MultiByteInt31(self.index)
 
         bt = (struct.pack(b'<B', self.type) +
@@ -226,6 +270,12 @@ class PrefixDictionaryElementRecord(DictionaryElementRecord):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x02')
+        >>> str(PrefixDictionaryElementSRecord.parse(fp))
+        '<s:Envelope>'
+        """
         index = MultiByteInt31.parse(fp).value
         return cls(index)
 
@@ -237,6 +287,7 @@ Record.add_records((
         DictionaryElementRecord,
     ))
 
+__module__ = sys.modules[__name__]
 __records__ = []
 
 for c in range(0x44, 0x5D + 1):
@@ -252,6 +303,7 @@ for c in range(0x44, 0x5D + 1):
                 char=char,
             )
            )
+    setattr(__module__, clsname, cls)
     __records__.append(cls)
 
 for c in range(0x5E, 0x77 + 1):
@@ -267,6 +319,7 @@ for c in range(0x5E, 0x77 + 1):
                 char=char,
             )
            )
+    setattr(__module__, clsname, cls)
     __records__.append(cls)
 
 Record.add_records(__records__)

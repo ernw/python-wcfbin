@@ -28,14 +28,13 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import, unicode_literals, division
 
-from builtins import str, chr, bytes
+from builtins import str, chr, bytes, int
 
 import struct
 import base64
 import datetime
 import logging
 import uuid
-import sys
 
 try:
     from htmlentitydefs import codepoint2name
@@ -113,63 +112,113 @@ class Int8TextRecord(Text):
         self.value = value
 
     def to_bytes(self):
+        r"""
+        >>> Int8TextRecord(42).to_bytes()
+        b'\x88*'
+        """
         return bytes(super(Int8TextRecord, self).to_bytes() +
-                     struct.pack(b'<b', self.value))
+                     struct.pack('<b', self.value))
 
     def __str__(self):
         return str(self.value)
 
     @classmethod
     def parse(cls, fp):
-        return cls(struct.unpack(b'<b', fp.read(1))[0])
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xff')
+        >>> Int8TextRecord.parse(fp).value
+        -1
+        """
+        return cls(struct.unpack('<b', fp.read(1))[0])
 
 
 class Int16TextRecord(Int8TextRecord):
     type = 0x8A
 
     def to_bytes(self):
-        return bytes(struct.pack(b'<B', self.type) +
-                     struct.pack(b'<h', self.value))
+        r"""
+        >>> Int16TextRecord(1337).to_bytes()
+        b'\x8a9\x05'
+        """
+        return bytes(struct.pack('<B', self.type) +
+                     struct.pack('<h', self.value))
 
     @classmethod
     def parse(cls, fp):
-        return cls(struct.unpack(b'<h', fp.read(2))[0])
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xff\xff')
+        >>> Int16TextRecord.parse(fp).value
+        -1
+        """
+        return cls(struct.unpack('<h', fp.read(2))[0])
 
 
 class Int32TextRecord(Int8TextRecord):
     type = 0x8C
 
     def to_bytes(self):
-        return bytes(struct.pack(b'<B', self.type) +
-                     struct.pack(b'<i', self.value))
+        r"""
+        >>> Int32TextRecord(1337).to_bytes()
+        b'\x8c9\x05\x00\x00'
+        """
+        return bytes(struct.pack('<B', self.type) +
+                     struct.pack('<i', self.value))
 
     @classmethod
     def parse(cls, fp):
-        return cls(struct.unpack(b'<i', fp.read(4))[0])
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xff\xff\xff\xff')
+        >>> Int32TextRecord.parse(fp).value
+        -1
+        """
+        return cls(struct.unpack('<i', fp.read(4))[0])
 
 
 class Int64TextRecord(Int8TextRecord):
     type = 0x8E
 
     def to_bytes(self):
-        return bytes(struct.pack(b'<B', self.type) +
-                     struct.pack(b'<q', self.value))
+        r"""
+        >>> Int64TextRecord(1337).to_bytes()
+        b'\x8e9\x05\x00\x00\x00\x00\x00\x00'
+        """
+        return bytes(struct.pack('<B', self.type) +
+                     struct.pack('<q', self.value))
 
     @classmethod
     def parse(cls, fp):
-        return cls(struct.unpack(b'<q', fp.read(8))[0])
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xff\xff\xff\xff\xff\xff\xff\xff')
+        >>> Int64TextRecord.parse(fp).value
+        -1
+        """
+        return cls(struct.unpack('<q', fp.read(8))[0])
 
 
 class UInt64TextRecord(Int64TextRecord):
     type = 0xB2
 
     def to_bytes(self):
-        return bytes(struct.pack(b'<B', self.type) +
-                     struct.pack(b'<Q', self.value))
+        r"""
+        >>> UInt64TextRecord(1337).to_bytes()
+        b'\xb29\x05\x00\x00\x00\x00\x00\x00'
+        """
+        return bytes(struct.pack('<B', self.type) +
+                     struct.pack('<Q', self.value))
 
     @classmethod
     def parse(cls, fp):
-        return cls(struct.unpack(b'<Q', fp.read(8))[0])
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xff\xff\xff\xff\xff\xff\xff\xff')
+        >>> int(UInt64TextRecord.parse(fp).value)
+        18446744073709551615
+        """
+        return cls(struct.unpack('<Q', fp.read(8))[0])
 
 
 class BoolTextRecord(Text):
@@ -179,15 +228,27 @@ class BoolTextRecord(Text):
         self.value = value
 
     def to_bytes(self):
-        return bytes(struct.pack(b'<B', self.type) +
-                     struct.pack(b'<B', 1 if self.value else 0))
+        r"""
+        >>> BoolTextRecord(True).to_bytes()
+        b'\xb4\x01'
+        >>> BoolTextRecord(False).to_bytes()
+        b'\xb4\x00'
+        """
+        return bytes(struct.pack('<B', self.type) +
+                     struct.pack('<B', 1 if self.value else 0))
 
     def __str__(self):
         return str(self.value)
 
     @classmethod
     def parse(cls, fp):
-        value = True if struct.unpack(b'<B', fp.read(1))[0] == 1 else False
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x01')
+        >>> BoolTextRecord.parse(fp).value
+        True
+        """
+        value = True if struct.unpack('<B', fp.read(1))[0] == 1 else False
         return cls(value)
 
 
@@ -195,16 +256,10 @@ class UnicodeChars8TextRecord(Text):
     type = 0xB6
 
     def __init__(self, string):
-        if sys.version_info >= (3, 0, 0):
-            if isinstance(string, str):
-                self.value = string
-            else:
-                self.value = str(string)
+        if isinstance(string, str):
+            self.value = string
         else:
-            if isinstance(string, unicode):
-                self.value = string
-            else:
-                self.value = unicode(string)
+            self.value = str(string)
 
     def to_bytes(self):
         """
@@ -214,8 +269,8 @@ class UnicodeChars8TextRecord(Text):
         b'\\xb6\\x06a\\x00b\\x00c\\x00'
         """
         data = self.value.encode('utf-16')[2:]  # skip bom
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<B', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<B', len(data))
         bt += data
         return bytes(bt)
 
@@ -230,7 +285,7 @@ class UnicodeChars8TextRecord(Text):
         >>> str(UnicodeChars8TextRecord.parse(fp))
         'abc'
         """
-        ln = struct.unpack(b'<B', fp.read(1))[0]
+        ln = struct.unpack('<B', fp.read(1))[0]
         data = fp.read(ln)
         return cls(data.decode('utf-16'))
 
@@ -239,9 +294,15 @@ class UnicodeChars16TextRecord(UnicodeChars8TextRecord):
     type = 0xB8
 
     def to_bytes(self):
+        """
+        >>> UnicodeChars16TextRecord('abc').to_bytes()
+        b'\\xb8\\x06\\x00a\\x00b\\x00c\\x00'
+        >>> UnicodeChars16TextRecord(u'abc').to_bytes()
+        b'\\xb8\\x06\\x00a\\x00b\\x00c\\x00'
+        """
         data = self.value.encode('utf-16')[2:]  # skip bom
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<H', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<H', len(data))
         bt += data
         return bytes(bt)
 
@@ -250,7 +311,13 @@ class UnicodeChars16TextRecord(UnicodeChars8TextRecord):
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<H', fp.read(1))[0]
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x06\\x00a\\x00b\\x00c\\x00')
+        >>> str(UnicodeChars16TextRecord.parse(fp))
+        'abc'
+        """
+        ln = struct.unpack('<H', fp.read(2))[0]
         data = fp.read(ln)
         return cls(data.decode('utf-16'))
 
@@ -259,9 +326,15 @@ class UnicodeChars32TextRecord(UnicodeChars8TextRecord):
     type = 0xBA
 
     def to_bytes(self):
+        """
+        >>> UnicodeChars32TextRecord('abc').to_bytes()
+        b'\\xba\\x06\\x00\\x00\\x00a\\x00b\\x00c\\x00'
+        >>> UnicodeChars32TextRecord(u'abc').to_bytes()
+        b'\\xba\\x06\\x00\\x00\\x00a\\x00b\\x00c\\x00'
+        """
         data = self.value.encode('utf-16')[2:]  # skip bom
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<I', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<I', len(data))
         bt += data
         return bytes(bt)
 
@@ -270,7 +343,13 @@ class UnicodeChars32TextRecord(UnicodeChars8TextRecord):
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<I', fp.read(1))[0]
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x06\\x00\\x00\\x00a\\x00b\\x00c\\x00')
+        >>> str(UnicodeChars32TextRecord.parse(fp))
+        'abc'
+        """
+        ln = struct.unpack('<I', fp.read(4))[0]
         data = fp.read(ln)
         return cls(data.decode('utf-16'))
 
@@ -287,9 +366,9 @@ class QNameDictionaryTextRecord(Text):
         >>> QNameDictionaryTextRecord('b', 2).to_bytes()
         b'\\xbc\\x01\\x00\\x00\\x02'
         """
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<B', ord(self.prefix) - ord('a'))
-        bt += struct.pack(b'<BBB',
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<B', ord(self.prefix) - ord('a'))
+        bt += struct.pack('<BBB',
                           (self.index >> 16) & 0xFF,
                           (self.index >> 8) & 0xFF,
                           (self.index >> 0) & 0xFF)
@@ -310,8 +389,8 @@ class QNameDictionaryTextRecord(Text):
         >>> str(QNameDictionaryTextRecord.parse(fp))
         'b:Envelope'
         """
-        prefix = chr(struct.unpack(b'<B', fp.read(1))[0] + ord('a'))
-        idx = struct.unpack(b'<BBB', fp.read(3))
+        prefix = chr(struct.unpack('<B', fp.read(1))[0] + ord('a'))
+        idx = struct.unpack('<BBB', fp.read(3))
         index = idx[0] << 16 | idx[1] << 8 | idx[2]
         return cls(prefix, index)
 
@@ -323,8 +402,12 @@ class FloatTextRecord(Text):
         self.value = value
 
     def to_bytes(self):
+        r"""
+        >>> FloatTextRecord(1.337).to_bytes()
+        b'\x90\xd1"\xab?'
+        """
         bt = super(FloatTextRecord, self).to_bytes()
-        bt += struct.pack(b'<f', self.value)
+        bt += struct.pack('<f', self.value)
         return bytes(bt)
 
     def __str__(self):
@@ -346,7 +429,13 @@ class FloatTextRecord(Text):
 
     @classmethod
     def parse(cls, fp):
-        value = struct.unpack(b'<f', fp.read(4))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\xd1"\xab?')
+        >>> FloatTextRecord.parse(fp).value
+        1.3370000123977661
+        """
+        value = struct.unpack('<f', fp.read(4))[0]
         return cls(value)
 
 
@@ -357,8 +446,12 @@ class DoubleTextRecord(FloatTextRecord):
         self.value = value
 
     def to_bytes(self):
+        r"""
+        >>> DoubleTextRecord(1.337).to_bytes()
+        b'\x921\x08\xac\x1cZd\xf5?'
+        """
         bt = super(FloatTextRecord, self).to_bytes()
-        bt += struct.pack(b'<d', self.value)
+        bt += struct.pack('<d', self.value)
         return bytes(bt)
 
     def __str__(self):
@@ -380,7 +473,13 @@ class DoubleTextRecord(FloatTextRecord):
 
     @classmethod
     def parse(cls, fp):
-        value = struct.unpack(b'<d', fp.read(8))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'1\x08\xac\x1cZd\xf5?')
+        >>> DoubleTextRecord.parse(fp).value
+        1.337
+        """
+        value = struct.unpack('<d', fp.read(8))[0]
         return cls(value)
 
 
@@ -394,11 +493,21 @@ class DecimalTextRecord(Text):
         return str(self.value)
 
     def to_bytes(self):
+        r"""
+        >>> DecimalTextRecord(Decimal(False, 0, 1337, 3)).to_bytes()
+        b'\x94\x00\x00\x03\x00\x00\x00\x00\x009\x05\x00\x00\x00\x00\x00\x00'
+        """
         return bytes(super(DecimalTextRecord, self).to_bytes() +
                      self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x00\x00\x03\x00\x00\x00\x00\x009\x05\x00\x00\x00\x00\x00\x00')
+        >>> str(DecimalTextRecord.parse(fp))
+        '1.337'
+        """
         value = Decimal.parse(fp)
         return cls(value)
 
@@ -431,7 +540,7 @@ class DatetimeTextRecord(Text):
         """
         bt = super(DatetimeTextRecord, self).to_bytes()
         bt += struct.pack(
-            b'<Q',
+            '<Q',
             ((self.tz & 3) << 62) | (self.value & 0x3FFFFFFFFFFFFFFF))
 
         return bytes(bt)
@@ -447,7 +556,7 @@ class DatetimeTextRecord(Text):
         >>> str(DatetimeTextRecord.parse(fp))
         '2006-05-17T00:00:00'
         """
-        data = struct.unpack(b'<Q', fp.read(8))[0]
+        data = struct.unpack('<Q', fp.read(8))[0]
         tz = data >> 62
         value = data & 0x3FFFFFFFFFFFFFFF
 
@@ -458,31 +567,35 @@ class Chars8TextRecord(Text):
     type = 0x98
 
     def __init__(self, value):
-        if sys.version_info >= (3, 0, 0):
-            if isinstance(value, str):
-                self.value = value
-            else:
-                self.value = str(value)
+        if isinstance(value, str):
+            self.value = value
         else:
-            if isinstance(value, unicode):
-                self.value = value
-            else:
-                self.value = unicode(value)
+            self.value = str(value)
 
     def __str__(self):
         return escape(self.value)
 
     def to_bytes(self):
+        r"""
+        >>> Chars8TextRecord('abc').to_bytes()
+        b'\x98\x03abc'
+        """
         data = self.value.encode('utf-8')
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<B', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<B', len(data))
         bt += data
 
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<B', fp.read(1))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04test')
+        >>> str(Chars8TextRecord.parse(fp))
+        'test'
+        """
+        ln = struct.unpack('<B', fp.read(1))[0]
         value = fp.read(ln).decode('utf-8')
         return cls(value)
 
@@ -491,16 +604,26 @@ class Chars16TextRecord(Chars8TextRecord):
     type = 0x9A
 
     def to_bytes(self):
+        r"""
+        >>> Chars16TextRecord('abc').to_bytes()
+        b'\x9a\x03\x00abc'
+        """
         data = self.value.encode('utf-8')
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<H', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<H', len(data))
         bt += data
 
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<H', fp.read(2))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04\x00test')
+        >>> str(Chars16TextRecord.parse(fp))
+        'test'
+        """
+        ln = struct.unpack('<H', fp.read(2))[0]
         value = fp.read(ln).decode('utf-8')
         return cls(value)
 
@@ -509,16 +632,26 @@ class Chars32TextRecord(Chars8TextRecord):
     type = 0x9C
 
     def to_bytes(self):
+        r"""
+        >>> Chars32TextRecord('abc').to_bytes()
+        b'\x9c\x03\x00\x00\x00abc'
+        """
         data = self.value.encode('utf-8')
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<I', len(data))
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<I', len(data))
         bt += data
 
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<I', fp.read(4))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04\x00\x00\x00test')
+        >>> str(Chars32TextRecord.parse(fp))
+        'test'
+        """
+        ln = struct.unpack('<I', fp.read(4))[0]
         value = fp.read(ln).decode('utf-8')
         return cls(value)
 
@@ -544,6 +677,12 @@ class UniqueIdTextRecord(Text):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x00\x11"3DUfw\x88\x99\xaa\xbb\xcc\xdd\xee\xff')
+        >>> str(UniqueIdTextRecord.parse(fp))
+        'urn:uuid:33221100-5544-7766-8899-aabbccddeeff'
+        """
         u = fp.read(16)
 
         return cls(bytes_le=u)
@@ -567,8 +706,12 @@ class Bytes8TextRecord(Text):
         self.value = data
 
     def to_bytes(self):
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<B', len(self.value))
+        r"""
+        >>> Bytes8TextRecord(b'abc').to_bytes()
+        b'\x9e\x03abc'
+        """
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<B', len(self.value))
         bt += self.value
 
         return bytes(bt)
@@ -578,8 +721,14 @@ class Bytes8TextRecord(Text):
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<B', fp.read(1))[0]
-        data = struct.unpack(b'%ds' % ln, fp.read(ln))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x03abc')
+        >>> bytes(Bytes8TextRecord.parse(fp).value)
+        b'abc'
+        """
+        ln = struct.unpack('<B', fp.read(1))[0]
+        data = struct.unpack('%ds' % ln, fp.read(ln))[0]
         return cls(data)
 
 
@@ -593,16 +742,26 @@ class Bytes16TextRecord(Bytes8TextRecord):
         return base64.b64encode(self.value)
 
     def to_bytes(self):
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<H', len(self.value))
+        r"""
+        >>> Bytes16TextRecord(b'abc').to_bytes()
+        b'\xa0\x03\x00abc'
+        """
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<H', len(self.value))
         bt += self.value
 
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<H', fp.read(2))[0]
-        data = struct.unpack(b'%ds' % ln, fp.read(ln))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x03\x00abc')
+        >>> bytes(Bytes16TextRecord.parse(fp).value)
+        b'abc'
+        """
+        ln = struct.unpack('<H', fp.read(2))[0]
+        data = struct.unpack('%ds' % ln, fp.read(ln))[0]
         return cls(data)
 
 
@@ -616,16 +775,26 @@ class Bytes32TextRecord(Bytes8TextRecord):
         return base64.b64encode(self.value)
 
     def to_bytes(self):
-        bt = struct.pack(b'<B', self.type)
-        bt += struct.pack(b'<I', len(self.value))
+        r"""
+        >>> Bytes32TextRecord(b'abc').to_bytes()
+        b'\xa2\x03\x00\x00\x00abc'
+        """
+        bt = struct.pack('<B', self.type)
+        bt += struct.pack('<I', len(self.value))
         bt += self.value
 
         return bytes(bt)
 
     @classmethod
     def parse(cls, fp):
-        ln = struct.unpack(b'<I', fp.read(4))[0]
-        data = struct.unpack(b'%ds' % ln, fp.read(ln))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x03\x00\x00\x00abc')
+        >>> bytes(Bytes32TextRecord.parse(fp).value)
+        b'abc'
+        """
+        ln = struct.unpack('<I', fp.read(4))[0]
+        data = struct.unpack('%ds' % ln, fp.read(ln))[0]
         return cls(data)
 
 
@@ -648,15 +817,25 @@ class TimeSpanTextRecord(Text):
         self.value = value
 
     def to_bytes(self):
+        r"""
+        >>> TimeSpanTextRecord(36000000).to_bytes()
+        b'\xae\x00Q%\x02\x00\x00\x00\x00'
+        """
         return bytes(super(TimeSpanTextRecord, self).to_bytes() +
-                     struct.pack(b'<q', self.value))
+                     struct.pack('<q', self.value))
 
     def __str__(self):
-        return str(datetime.timedelta(milliseconds=self.value/100))
+        return str(datetime.timedelta(milliseconds=self.value/10))
 
     @classmethod
     def parse(cls, fp):
-        value = struct.unpack(b'<q', fp.read(8))[0]
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x00Q%\x02\x00\x00\x00\x00')
+        >>> str(TimeSpanTextRecord.parse(fp))
+        '1:00:00'
+        """
+        value = struct.unpack('<q', fp.read(8))[0]
         return cls(value)
 
 
@@ -667,6 +846,10 @@ class DictionaryTextRecord(Text):
         self.index = index
 
     def to_bytes(self):
+        r"""
+        >>> DictionaryTextRecord(2).to_bytes()
+        b'\xaa\x02'
+        """
         return bytes(super(DictionaryTextRecord, self).to_bytes() +
                      MultiByteInt31(self.index).to_bytes())
 
@@ -675,6 +858,12 @@ class DictionaryTextRecord(Text):
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x02')
+        >>> str(DictionaryTextRecord.parse(fp))
+        'Envelope'
+        """
         index = MultiByteInt31.parse(fp).value
         return cls(index)
 
