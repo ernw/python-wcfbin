@@ -94,6 +94,21 @@ class MultiByteInt31(object):
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x7f')
+        >>> mb = MultiByteInt31.parse(fp)
+        >>> mb.value
+        127
+        >>> fp = BytesIO(b'\\xff\\x7f')
+        >>> mb = MultiByteInt31.parse(fp)
+        >>> mb.value
+        16383
+        >>> fp = BytesIO(b'\\xb9\\x0a')
+        >>> mb = MultiByteInt31.parse(fp)
+        >>> mb.value
+        1337
+        """
         v = 0
         # tmp = ''
         for pos in range(4):
@@ -208,7 +223,7 @@ class Decimal(object):
         low = struct.unpack(b'<Q', fp.read(8))[0]
 
         return cls(sign, high, low, scale)
-        
+
 
 if __name__ == '__main__':
     import doctest

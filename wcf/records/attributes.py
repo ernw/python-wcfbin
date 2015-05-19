@@ -38,6 +38,7 @@ from builtins import str, chr, bytes
 
 import struct
 import logging
+import sys
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +72,15 @@ class ShortAttributeRecord(Attribute):
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x04test\\x86')
+        >>> sar = ShortAttributeRecord.parse(fp)
+        >>> str(sar.name)
+        'test'
+        >>> sar.value
+        <TrueTextRecord(type=0x86)>
+        """
         name = Utf8String.parse(fp).value
         type = struct.unpack(b'<B', fp.read(1))[0]
         value = Record.records[type].parse(fp)
@@ -100,13 +110,24 @@ class AttributeRecord(Attribute):
 
     def __str__(self):
         return '%s:%s="%s"' % (self.prefix, self.name, str(self.value))
-   
+
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x01x\\x04test\\x86')
+        >>> ar = AttributeRecord.parse(fp)
+        >>> str(ar.prefix)
+        'x'
+        >>> str(ar.name)
+        'test'
+        >>> ar.value
+        <TrueTextRecord(type=0x86)>
+        """
         prefix = Utf8String.parse(fp).value
-        name = Utf8String.parse(fp).value
-        type = struct.unpack(b'<B', fp.read(1))[0]
-        value= Record.records[type].parse(fp)
+        name   = Utf8String.parse(fp).value
+        type   = struct.unpack(b'<B', fp.read(1))[0]
+        value  = Record.records[type].parse(fp)
 
         return cls(prefix, name, value)
 
@@ -131,12 +152,23 @@ class ShortDictionaryAttributeRecord(Attribute):
 
     def __str__(self):
         return '%s="%s"' % (dictionary[self.index], str(self.value))
-   
+
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x0c\\x86')
+        >>> sdar = ShortDictionaryAttributeRecord.parse(fp)
+        >>> sdar.index
+        12
+        >>> sdar.value
+        <TrueTextRecord(type=0x86)>
+        >>> str(sdar)
+        'To="true"'
+        """
         index = MultiByteInt31.parse(fp).value
-        type = struct.unpack(b'<B', fp.read(1))[0]
-        value= Record.records[type].parse(fp)
+        type  = struct.unpack(b'<B', fp.read(1))[0]
+        value = Record.records[type].parse(fp)
 
         return cls(index, value)
 
@@ -162,15 +194,26 @@ class DictionaryAttributeRecord(Attribute):
         return bytes(bt)
 
     def __str__(self):
-        return '%s:%s="%s"' % (self.prefix, dictionary[self.index], 
+        return '%s:%s="%s"' % (self.prefix, dictionary[self.index],
                 str(self.value))
-   
+
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x01x\\x02\\x86')
+        >>> dar = DictionaryAttributeRecord.parse(fp)
+        >>> str(dar.prefix)
+        'x'
+        >>> dar.index
+        2
+        >>> str(dar.value)
+        'true'
+        """
         prefix = Utf8String.parse(fp).value
         index = MultiByteInt31.parse(fp).value
-        type = struct.unpack(b'<B', fp.read(1))[0]
-        value= Record.records[type].parse(fp)
+        type  = struct.unpack(b'<B', fp.read(1))[0]
+        value = Record.records[type].parse(fp)
 
         return cls(prefix, index, value)
 
@@ -196,6 +239,15 @@ class ShortDictionaryXmlnsAttributeRecord(Attribute):
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x06')
+        >>> sdxar = ShortDictionaryXmlnsAttributeRecord.parse(fp)
+        >>> sdxar.index
+        6
+        >>> str(sdxar)
+        'xmlns="http://www.w3.org/2005/08/addressing"'
+        """
         index = MultiByteInt31.parse(fp).value
         return cls(index)
 
@@ -223,6 +275,17 @@ class DictionaryXmlnsAttributeRecord(Attribute):
 
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x01a\\x06')
+        >>> dxar = DictionaryXmlnsAttributeRecord.parse(fp)
+        >>> str(dxar.prefix)
+        'a'
+        >>> dxar.index
+        6
+        >>> str(dxar)
+        'xmlns:a="http://www.w3.org/2005/08/addressing"'
+        """
         prefix = Utf8String.parse(fp).value
         index = MultiByteInt31.parse(fp).value
         return cls(prefix, index)
@@ -236,15 +299,26 @@ class ShortXmlnsAttributeRecord(Attribute):
         self.value = value
 
     def to_bytes(self):
+        """
+        >>> ShortXmlnsAttributeRecord('test').to_bytes()
+        b'\\x08\\x04test'
+        """
         bt = struct.pack(b'<B', self.type)
         bt += Utf8String(self.value).to_bytes()
         return bytes(bt)
 
     def __str__(self):
         return 'xmlns="%s"' % (self.value,)
-   
+
     @classmethod
     def parse(cls, fp):
+        """
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\\x04test')
+        >>> sxar = ShortXmlnsAttributeRecord.parse(fp)
+        >>> str(sxar)
+        'xmlns="test"'
+        """
         value = Utf8String.parse(fp).value
         return cls(value)
 
@@ -258,6 +332,10 @@ class XmlnsAttributeRecord(Attribute):
         self.value = value
 
     def to_bytes(self):
+        """
+        >>> XmlnsAttributeRecord('name', 'value').to_bytes()
+        b'\\t\\x04name\\x05value'
+        """
         bt = struct.pack(b'<B', self.type)
         bt += Utf8String(self.name).to_bytes()
         bt += Utf8String(self.value).to_bytes()
@@ -265,9 +343,15 @@ class XmlnsAttributeRecord(Attribute):
 
     def __str__(self):
         return 'xmlns:%s="%s"' % (self.name, self.value)
-   
+
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04name\x05value')
+        >>> str(XmlnsAttributeRecord.parse(fp))
+        'xmlns:name="value"'
+        """
         name = Utf8String.parse(fp).value
         value = Utf8String.parse(fp).value
         return cls(name, value)
@@ -278,12 +362,23 @@ class PrefixAttributeRecord(AttributeRecord):
         super(PrefixAttributeRecord, self).__init__(self.char, name, value)
 
     def to_bytes(self):
+        r"""
+        >>> PrefixAttributeARecord('name', TrueTextRecord()).to_bytes()
+        b'&\x04name\x86'
+        """
         string = Utf8String(self.name)
         return bytes(struct.pack(b'<B', self.type) + string.to_bytes() +
                      self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\x04name\x86')
+        >>> paar = PrefixAttributeARecord.parse(fp)
+        >>> str(paar)
+        'a:name="true"'
+        """
         name = Utf8String.parse(fp).value
         type = struct.unpack(b'<B', fp.read(1))[0]
         value= Record.records[type].parse(fp)
@@ -296,12 +391,23 @@ class PrefixDictionaryAttributeRecord(DictionaryAttributeRecord):
                                                               index, value)
 
     def to_bytes(self):
+        r"""
+        >>> PrefixDictionaryAttributeBRecord(2, TrueTextRecord()).to_bytes()
+        b'\r\x02\x86'
+        """
         idx = MultiByteInt31(self.index)
         return bytes(struct.pack(b'<B', self.type) + idx.to_bytes() +
                      self.value.to_bytes())
 
     @classmethod
     def parse(cls, fp):
+        r"""
+        >>> from io import BytesIO
+        >>> fp = BytesIO(b'\02\x86')
+        >>> pdabr = PrefixDictionaryAttributeBRecord.parse(fp)
+        >>> str(pdabr)
+        'b:Envelope="true"'
+        """
         index = MultiByteInt31.parse(fp).value
         type = struct.unpack(b'<B', fp.read(1))[0]
         value = Record.records[type].parse(fp)
@@ -320,8 +426,8 @@ Record.add_records((
         ))
 
 
+__module__ = sys.modules[__name__]
 __records__ = []
-
 for c in range(0x0C, 0x25 + 1):
     char = chr(c - 0x0C + ord('a'))
     clsname = 'PrefixDictionaryAttribute' + char.upper() + 'Record'
@@ -335,6 +441,7 @@ for c in range(0x0C, 0x25 + 1):
                 char=char,
             )
            )
+    setattr(__module__, clsname, cls)
     __records__.append(cls)
 
 for c in range(0x26, 0x3F + 1):
@@ -350,6 +457,7 @@ for c in range(0x26, 0x3F + 1):
                 char=char,
             )
            )
+    setattr(__module__, clsname, cls)
     __records__.append(cls)
 
 Record.add_records(__records__)
