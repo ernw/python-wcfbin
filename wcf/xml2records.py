@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 from builtins import chr
 
-from wcf.MyHTMLParser import HTMLParser
+from wcf.MyHTMLParser import HTMLParser, interesting_cdata
 try:
     from htmlentitydefs import name2codepoint
 except ImportError:
@@ -44,6 +44,7 @@ class XMLParser(HTMLParser):
         self.last_record.childs = self.records
         self.last_record.parent = None
         self.data = None
+        self.is_cdata = False
 
     def _parse_tag(self, tag):
         if ':' in tag:
@@ -77,8 +78,8 @@ class XMLParser(HTMLParser):
                 log.debug('New ShortElementRecord: %s' % (tag, ))
                 return ShortElementRecord(tag)
 
-    def _store_data(self, data, end=False):
-        textrecord = self._parse_data(data)
+    def _store_data(self, data, end=False, is_cdata=False):
+        textrecord = self._parse_data(data, is_cdata)
         if isinstance(textrecord, EmptyTextRecord):
             return
         log.debug('New %s: %s' % (type(textrecord).__name__, data))
@@ -87,8 +88,9 @@ class XMLParser(HTMLParser):
         #if end:
         #    textrecord.type += 1
 
-    def _parse_data(self, data):
-        data = data.strip()
+    def _parse_data(self, data, is_cdata=False):
+        if not is_cdata:
+            data = data.strip()
         b64 = False
         try:
             if base64_reg.match(data):
@@ -215,6 +217,7 @@ class XMLParser(HTMLParser):
         if self.data:
             self._store_data(self.data, False)
             self.data = None
+            self.is_cdata = False
 
         el = self._parse_tag(tag)
         for n, v in attrs:
@@ -227,6 +230,7 @@ class XMLParser(HTMLParser):
         if self.data:
             self._store_data(self.data, False)
             self.data = None
+            self.is_cdata = False
 
         el = self._parse_tag(tag)
         for n, v in attrs:
@@ -236,7 +240,7 @@ class XMLParser(HTMLParser):
 
     def handle_endtag(self, tag):
         if self.data:
-            self._store_data(self.data, True)
+            self._store_data(self.data, True, self.is_cdata)
             self.data = None
         else:
             pass#self.last_record.childs.append(EndElementRecord())
@@ -244,6 +248,7 @@ class XMLParser(HTMLParser):
         self.last_record = self.last_record.parent
 
     def handle_data(self, data):
+        self.is_cdata = self.is_cdata or self.interesting == interesting_cdata
         if not self.data:
             self.data = data
         else:
@@ -264,6 +269,7 @@ class XMLParser(HTMLParser):
         if data:
             self._store_data(self.data, False)
             self.data = None
+            self.is_cdata = False
 
         self.last_record.childs.append(CommentRecord(comment))
 
