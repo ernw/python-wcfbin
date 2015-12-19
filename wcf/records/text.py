@@ -771,8 +771,12 @@ class Bytes32TextRecord(Bytes8TextRecord):
     def __init__(self, data):
         self.value = data
 
-    def __str__(self):
-        return base64.b64encode(self.value)
+     def __str__(self):
+        g = base64.b64encode(self.value)
+        if isinstance(g, str):
+            return g
+        else:
+            return g.decode('utf-8')
 
     def to_bytes(self):
         r"""
