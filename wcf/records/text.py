@@ -741,7 +741,7 @@ class Bytes8TextRecord(Text):
         >>> str(Bytes8TextRecord(b'abc'))
         'YWJj'
         """
-        return base64.b64encode(self.value)
+        return base64.b64encode(self.value).decode()
 
     @classmethod
     def parse(cls, fp):
