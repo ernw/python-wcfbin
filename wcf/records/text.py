@@ -120,6 +120,10 @@ class Int8TextRecord(Text):
                      struct.pack(b'<b', self.value))
 
     def __str__(self):
+        r"""
+        >>> str(Int8TextRecord(42))
+        '42'
+        """
         return str(self.value)
 
     @classmethod
@@ -238,6 +242,10 @@ class BoolTextRecord(Text):
                      struct.pack(b'<B', 1 if self.value else 0))
 
     def __str__(self):
+        r"""
+        >>> str(BoolTextRecord(True))
+        'True'
+        """
         return str(self.value)
 
     @classmethod
@@ -275,6 +283,10 @@ class UnicodeChars8TextRecord(Text):
         return bytes(bt)
 
     def __str__(self):
+        r"""
+        >>> str(UnicodeChars8TextRecord('abc'))
+        'abc'
+        """
         return self.value
 
     @classmethod
@@ -306,9 +318,6 @@ class UnicodeChars16TextRecord(UnicodeChars8TextRecord):
         bt += data
         return bytes(bt)
 
-    def __str__(self):
-        return self.value
-
     @classmethod
     def parse(cls, fp):
         """
@@ -337,9 +346,6 @@ class UnicodeChars32TextRecord(UnicodeChars8TextRecord):
         bt += struct.pack(b'<I', len(data))
         bt += data
         return bytes(bt)
-
-    def __str__(self):
-        return self.value
 
     @classmethod
     def parse(cls, fp):
@@ -490,6 +496,10 @@ class DecimalTextRecord(Text):
         self.value = value
 
     def __str__(self):
+        r"""
+        >>> str(DecimalTextRecord(Decimal(False, 0, 1337, 3)))
+        '1.337'
+        """
         return str(self.value)
 
     def to_bytes(self):
@@ -573,6 +583,12 @@ class Chars8TextRecord(Text):
             self.value = str(value)
 
     def __str__(self):
+        r"""
+        >>> str(Chars8TextRecord("abc"))
+        'abc'
+        >>> str(Chars8TextRecord("a<b>c>>&'\""))
+        "a&lt;b&gt;c&gt;&gt;&amp;'&quot;"
+        """
         return escape(self.value)
 
     def to_bytes(self):
@@ -673,6 +689,10 @@ class UniqueIdTextRecord(Text):
         return bytes(bt)
 
     def __str__(self):
+        r"""
+        >>> str(UniqueIdTextRecord('urn:uuid:33221100-5544-7766-8899-aabbccddeeff'))
+        'urn:uuid:33221100-5544-7766-8899-aabbccddeeff'
+        """
         return self.uuid.urn
 
     @classmethod
@@ -717,7 +737,11 @@ class Bytes8TextRecord(Text):
         return bytes(bt)
 
     def __str__(self):
-        return base64.b64encode(self.value)
+        r"""
+        >>> str(Bytes8TextRecord(b'abc'))
+        'YWJj'
+        """
+        return base64.b64encode(self.value).decode()
 
     @classmethod
     def parse(cls, fp):
@@ -736,10 +760,7 @@ class Bytes16TextRecord(Bytes8TextRecord):
     type = 0xA0
 
     def __init__(self, data):
-        self.value = data
-
-    def __str__(self):
-        return base64.b64encode(self.value)
+        super(Bytes16TextRecord, self).__init__(data)
 
     def to_bytes(self):
         r"""
@@ -769,10 +790,7 @@ class Bytes32TextRecord(Bytes8TextRecord):
     type = 0xA2
 
     def __init__(self, data):
-        self.value = data
-
-    def __str__(self):
-        return base64.b64encode(self.value)
+        super(Bytes32TextRecord, self).__init__(data)
 
     def to_bytes(self):
         r"""
@@ -854,6 +872,10 @@ class DictionaryTextRecord(Text):
                      MultiByteInt31(self.index).to_bytes())
 
     def __str__(self):
+        r"""
+        >>> str(DictionaryTextRecord(2))
+        'Envelope'
+        """
         return dictionary[self.index]
 
     @classmethod
