@@ -166,7 +166,7 @@ class XMLParser(HTMLParser):
             return DateTimeTextRecord(dt, tz)
 
         # text as fallback
-        val = len(data)
+        val = len(data.encode('utf-16le'))
         if val < 2**8:
             return UnicodeChars8TextRecord(data)
         elif val < 2**16:
