@@ -370,14 +370,11 @@ class QNameDictionaryTextRecord(Text):
     def to_bytes(self):
         """
         >>> QNameDictionaryTextRecord('b', 2).to_bytes()
-        b'\\xbc\\x01\\x00\\x00\\x02'
+        b'\\xbc\\x01\\x02'
         """
         bt = struct.pack(b'<B', self.type)
         bt += struct.pack(b'<B', ord(self.prefix) - ord('a'))
-        bt += struct.pack(b'<BBB',
-                          (self.index >> 16) & 0xFF,
-                          (self.index >> 8) & 0xFF,
-                          (self.index >> 0) & 0xFF)
+        bt += MultiByteInt31(self.index).to_bytes()
         return bytes(bt)
 
     def __str__(self):
@@ -391,13 +388,12 @@ class QNameDictionaryTextRecord(Text):
     def parse(cls, fp):
         """
         >>> from io import BytesIO
-        >>> fp = BytesIO(b'\\x01\\x00\\x00\\x02')
+        >>> fp = BytesIO(b'\\x01\\x02')
         >>> str(QNameDictionaryTextRecord.parse(fp))
         'b:Envelope'
         """
         prefix = chr(struct.unpack(b'<B', fp.read(1))[0] + ord('a'))
-        idx = struct.unpack(b'<BBB', fp.read(3))
-        index = idx[0] << 16 | idx[1] << 8 | idx[2]
+        index = MultiByteInt31.parse(fp).value
         return cls(prefix, index)
 
 
